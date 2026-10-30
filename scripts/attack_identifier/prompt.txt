@@ -1,0 +1,3 @@
+Act as a security analyst looking for suspicious activities/events in a given network.
+The file “topology.gexf” contains the communication paths and protocols used in the network. The file “sqlQueryAnalysis.xlsx” contains a list of SQL queries that help identify the presence of adversarial activities within the network, along with their results when executed on a database containing Zeek log files from the network under test, and a prediction of whether these results indicate adversarial activities. Based on the information in the attached files, arrange the adversarial activities in chronological order and construct detailed possible attack paths. Present the result in HTML format.
+

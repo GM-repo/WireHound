@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attack Path Analysis — capture 2026-08-10 (run 2)</title>
+<style>
+  :root{
+    --surface-0:#f4f3f0; --surface-1:#fcfcfb; --surface-2:#eeede9;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#75736d;
+    --rule:#dedcd6; --rule-strong:#c3c0b7;
+    --accent:#2a78d6; --accent-soft:#e8f0fc;
+    --critical:#d03b3b; --serious:#ec835a; --warning:#fab219; --good:#0ca30c;
+    --critical-bg:#fbecec; --serious-bg:#fdeee7; --warning-bg:#fef6e4; --good-bg:#e8f6e8;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:where(:not([data-theme="light"])){
+      --surface-0:#111110; --surface-1:#1a1a19; --surface-2:#242422;
+      --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#918f85;
+      --rule:#33332f; --rule-strong:#4a4a45;
+      --accent:#3987e5; --accent-soft:#16263a;
+      --critical-bg:#2c1717; --serious-bg:#2e1d15; --warning-bg:#2d2410; --good-bg:#14260f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --surface-0:#111110; --surface-1:#1a1a19; --surface-2:#242422;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#918f85;
+    --rule:#33332f; --rule-strong:#4a4a45;
+    --accent:#3987e5; --accent-soft:#16263a;
+    --critical-bg:#2c1717; --serious-bg:#2e1d15; --warning-bg:#2d2410; --good-bg:#14260f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--surface-0);color:var(--text-primary);
+       font-family:var(--sans);font-size:15px;line-height:1.62;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px}
+  header.top{background:var(--surface-1);border-bottom:1px solid var(--rule);
+             padding:40px 0 30px;margin-bottom:34px}
+  header.top .wrap{padding-bottom:0}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;
+           text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+  h1{font-size:31px;line-height:1.2;margin:0 0 12px;letter-spacing:-.02em;font-weight:650}
+  .sub{color:var(--text-secondary);font-size:16px;max-width:74ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:22px;
+        font-family:var(--mono);font-size:12px;color:var(--text-secondary)}
+  .meta b{color:var(--text-primary);font-weight:600}
+  h2{font-size:21px;margin:52px 0 6px;letter-spacing:-.01em;font-weight:650;
+     padding-bottom:9px;border-bottom:1px solid var(--rule-strong)}
+  h3{font-size:16.5px;margin:28px 0 8px;font-weight:640}
+  h4{font-size:13px;margin:20px 0 7px;font-weight:660;letter-spacing:.05em;
+     text-transform:uppercase;color:var(--text-secondary);font-family:var(--mono)}
+  p{margin:0 0 13px;max-width:80ch}
+  code,.ip{font-family:var(--mono);font-size:.885em;background:var(--surface-2);
+           padding:1px 5px;border-radius:4px;white-space:nowrap}
+  .callout{background:var(--surface-1);border:1px solid var(--rule);
+           border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+           padding:17px 20px;margin:20px 0}
+  .callout.warn{border-left-color:var(--critical)}
+  .callout p:last-child{margin-bottom:0}
+  table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:13.5px;
+        background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;
+        overflow:hidden}
+  th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.07em;
+     text-transform:uppercase;color:var(--text-secondary);font-weight:600;
+     padding:10px 13px;border-bottom:1px solid var(--rule-strong);
+     background:var(--surface-2);vertical-align:bottom}
+  td{padding:9px 13px;border-bottom:1px solid var(--rule);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.n{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);
+         font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+         padding:3px 8px;border-radius:5px;white-space:nowrap;border:1px solid transparent}
+  .b-critical{background:var(--critical-bg);color:var(--critical);border-color:var(--critical)}
+  .b-serious {background:var(--serious-bg); color:var(--serious); border-color:var(--serious)}
+  .b-warning {background:var(--warning-bg); color:var(--warning); border-color:var(--warning)}
+  .b-good    {background:var(--good-bg);    color:var(--good);    border-color:var(--good)}
+  .b-info    {background:var(--accent-soft);color:var(--accent);  border-color:var(--accent)}
+  .glyph{font-size:11px;line-height:1}
+
+  /* ---- timeline ---- */
+  .tl{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;
+      padding:20px 22px 12px;margin:18px 0 8px;overflow-x:auto}
+  .tl-inner{min-width:820px}
+  .tl-axis{position:relative;height:20px;margin-left:186px;border-bottom:1px solid var(--rule-strong)}
+  .tl-tick{position:absolute;top:0;font-family:var(--mono);font-size:10.5px;
+           color:var(--text-muted);transform:translateX(-50%)}
+  .tl-tick::after{content:"";position:absolute;left:50%;top:15px;width:1px;height:5px;
+                  background:var(--rule-strong)}
+  .lane{display:flex;align-items:center;min-height:38px;border-bottom:1px solid var(--rule)}
+  .lane:last-child{border-bottom:none}
+  .lane-label{width:186px;flex:0 0 186px;padding-right:14px;font-size:12.5px;
+              line-height:1.3;color:var(--text-secondary)}
+  .lane-label b{display:block;font-family:var(--mono);font-size:11px;color:var(--text-primary);
+                letter-spacing:.05em}
+  .lane-track{position:relative;flex:1;height:38px}
+  .lane-track::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;
+                      background:var(--rule);}
+  .ev{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
+      transform:translate(-50%,-50%);border:2px solid var(--surface-1);cursor:help;z-index:2}
+  .ev.critical{background:var(--critical)} .ev.serious{background:var(--serious)}
+  .ev.warning{background:var(--warning)}   .ev.info{background:var(--accent)}
+  .span{position:absolute;top:50%;height:7px;transform:translateY(-50%);border-radius:4px;
+        opacity:.36;cursor:help}
+  .span.critical{background:var(--critical)} .span.serious{background:var(--serious)}
+  .ev:hover,.span:hover{outline:2px solid var(--text-primary);outline-offset:2px}
+  @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .span{opacity:.55}}
+  :root[data-theme="dark"] .span{opacity:.55}
+  .tl-legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;padding-top:12px;
+             border-top:1px solid var(--rule);font-size:12px;color:var(--text-secondary)}
+  .tl-legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+  /* ---- path cards ---- */
+  .path{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;
+        padding:24px 26px;margin:22px 0}
+  .path-head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;
+             padding-bottom:14px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+  .path-id{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.09em;
+           background:var(--accent-soft);color:var(--accent);padding:5px 11px;border-radius:6px;
+           border:1px solid var(--accent);white-space:nowrap}
+  .path-title{flex:1;min-width:260px}
+  .path-title h3{margin:0 0 3px;font-size:18px}
+  .path-title .tag{font-size:13px;color:var(--text-secondary)}
+  .chain{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:8px 0 18px}
+  .step{flex:1 1 152px;min-width:152px;background:var(--surface-2);border:1px solid var(--rule);
+        border-radius:8px;padding:11px 13px;position:relative}
+  .step .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--text-muted);margin-bottom:5px;display:block}
+  .step .v{font-size:13px;line-height:1.42;color:var(--text-primary)}
+  .step .t{font-family:var(--mono);font-size:11px;color:var(--text-secondary);margin-top:6px;
+           display:block}
+  .arrow{align-self:center;color:var(--rule-strong);font-size:17px;flex:0 0 auto}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:5px 16px;font-size:13.5px;margin:14px 0}
+  .kv dt{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+         color:var(--text-secondary);padding-top:3px}
+  .kv dd{margin:0}
+  ul{margin:0 0 13px;padding-left:20px;max-width:80ch} li{margin-bottom:5px}
+  .foot{margin-top:60px;padding-top:20px;border-top:1px solid var(--rule-strong);
+        font-size:12.5px;color:var(--text-muted)}
+  .toggle{position:fixed;top:16px;right:16px;z-index:50;background:var(--surface-1);
+          border:1px solid var(--rule-strong);color:var(--text-secondary);border-radius:7px;
+          padding:6px 11px;font-family:var(--mono);font-size:11px;cursor:pointer}
+  @media print{.toggle{display:none} body{background:#fff} .path,.tl,table{break-inside:avoid}}
+</style>
+<style>
+  a{color:var(--accent)}
+  .b-good{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+</style>
+</head>
+<body>
+<button class="toggle" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">◐ theme</button>
+
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Network Detection &amp; Response · Attack path reconstruction · Run 2</div>
+  <h1>Seven candidate attack paths in the 2026-08-10 capture</h1>
+  <p class="sub">Reconstructed from 232 hunt characteristics run against the Zeek log database — 16 returned
+     evidence judged positive — correlated against the 61-node topology. Each path is a
+     <em>hypothesis with its evidence attached</em>, not a confirmed incident.</p>
+  <div class="meta">
+    <span>Capture <b>2026-08-10 00:00:00 → 2026-08-11 00:02 UTC</b></span>
+    <span>Duration <b>~24 h</b></span>
+    <span>Hosts <b>61</b></span>
+    <span>Segments <b>5</b></span>
+    <span>Positive <b>16 / 232</b></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+<div class="callout warn">
+  <p><b>This is the same capture, adjudicated a second time.</b> The topology file is byte-identical to the previous
+  submission, and <b>289 of 295 query outputs are byte-identical</b> — the underlying evidence has not changed. What
+  changed is the model's verdict on eight rows. That instability is treated as a finding in its own right
+  (see <a href="#stability">Adjudication stability</a>), and every path below is built on the
+  <b>union of both runs</b> rather than either one alone.</p>
+</div>
+
+<h2>Key judgements</h2>
+<table>
+  <thead><tr><th style="width:52px">Path</th><th>Hypothesis</th><th style="width:128px">Severity &amp; confidence</th><th style="width:120px">Primary evidence</th></tr></thead>
+  <tbody>
+    <tr><td class="n"><b>A</b></td><td><b>Established C2 on <span class="ip">10.90.7.30</span>, then two-hop lateral movement</b> through the management enclave to a file server</td><td><span class="badge b-critical"><span class="glyph">●</span>Critical</span><br><span style="font-size:11px;color:var(--text-secondary)">high confidence</span></td><td class="n">A-5, T-12, F-23, C-1, C-17, W-18</td></tr>
+    <tr><td class="n"><b>B</b></td><td><b>4.07 GiB uploaded in byte-identical 8.01 MiB units</b> by all 40 workstations, each receiving a 714-byte reply</td><td><span class="badge b-serious"><span class="glyph">◆</span>Serious</span><br><span style="font-size:11px;color:var(--text-secondary)">medium-high confidence</span></td><td class="n">F-2, F-14, C-17, C-12</td></tr>
+    <tr><td class="n"><b>C</b></td><td><b>Domain admin credential broadcast in cleartext</b> — every workstation binds LDAP as <code>cn=admin</code> on port 389</td><td><span class="badge b-serious"><span class="glyph">◆</span>Serious</span><br><span style="font-size:11px;color:var(--text-secondary)">high confidence</span></td><td class="n">W-8, A-6, C-12</td></tr>
+    <tr><td class="n"><b>D</b></td><td><b>Database dump pulled by a service account to an address in no observed segment</b></td><td><span class="badge b-critical"><span class="glyph">●</span>Critical</span><br><span style="font-size:11px;color:var(--text-secondary)">high confidence</span></td><td class="n">M-1, A-6, F-23, I-9</td></tr>
+    <tr><td class="n"><b>E</b></td><td><b>A binary protocol running on the IMAP port, fleet-wide</b> — 720 flows Zeek cannot parse as IMAP</td><td><span class="badge b-serious"><span class="glyph">◆</span>Serious</span><br><span style="font-size:11px;color:var(--text-secondary)">medium confidence</span></td><td class="n">P-7, C-19, F-7, F-16, C-12, C-17</td></tr>
+    <tr><td class="n"><b>F</b></td><td><b>OT process write during a coincident polling blackout</b> on all three ICS protocols</td><td><span class="badge b-warning"><span class="glyph">▲</span>Warning</span><br><span style="font-size:11px;color:var(--text-secondary)">low-medium confidence</span></td><td class="n">O-4, O-2, OT-MODBUS, O-14</td></tr>
+    <tr><td class="n"><b>G</b></td><td><b>Prompt injection aimed at the AI triage layer</b>, carried in a User-Agent header</td><td><span class="badge b-serious"><span class="glyph">◆</span>Serious</span><br><span style="font-size:11px;color:var(--text-secondary)">medium-high confidence</span></td><td class="n">H-1, H-5, F-23, I-9</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <p><b>Scope limit that governs every path.</b> The capture contains <b>no external hosts</b> — all 61 nodes are
+  RFC1918, multicast or IPv6 link-local. Internet-bound traffic is visible only as far as the two segment proxies,
+  <span class="ip">10.30.9.254</span> and <span class="ip">10.90.7.254</span>, with the real destination surviving only in the TLS
+  SNI. That is why the C2 domain can be named but not attributed, and why "internal staging" and "exfiltration"
+  cannot be separated on flow direction alone.</p>
+</div>
+
+<h2>Network model</h2>
+<p>From the GEXF graph: 61 nodes, 1,135 directed service edges. Roles are inferred from connectivity and observed
+   services — the graph carries no role attributes.</p>
+<table>
+  <thead><tr><th>Segment</th><th style="width:56px">Hosts</th><th>Inferred role</th><th>Key hosts and observed services</th></tr></thead>
+  <tbody>
+    <tr><td class="n">10.30.0.0/24</td><td class="n">40</td><td>User workstations</td><td><span class="ip">.10</span>–<span class="ip">.49</span>; uniform profile — ssl, dns, ldap, krb, ntlm/smb, plus unclassified traffic on 143</td></tr>
+    <tr><td class="n">10.30.9.0/24</td><td class="n">6</td><td>Core servers</td><td><span class="ip">.1</span> DNS/DHCP/NTP · <span class="ip">.10</span> LDAP+Kerberos DC · <span class="ip">.20</span> SMB+FTP · <span class="ip">.25</span> IMAP · <span class="ip">.30</span> TLS server · <span class="ip">.254</span> proxy</td></tr>
+    <tr><td class="n">10.90.7.0/24</td><td class="n">4</td><td>Management enclave</td><td><span class="ip">.30</span> admin workstation · <span class="ip">.61</span> <code>ws-fin07</code> · <span class="ip">.80</span> file server · <span class="ip">.254</span> proxy</td></tr>
+    <tr><td class="n">10.40.1.0/24</td><td class="n">2</td><td>OT supervisory</td><td><span class="ip">.10</span> master (modbus, s7comm, bacnet) · <span class="ip">.20</span> master (dnp3, opcua)</td></tr>
+    <tr><td class="n">10.40.2.0/24</td><td class="n">5</td><td>OT field devices</td><td><span class="ip">.11</span> Modbus slave · <span class="ip">.12</span> DNP3 · <span class="ip">.13</span> S7 PLC · <span class="ip">.14</span> OPC UA · <span class="ip">.15</span> BACnet</td></tr>
+  </tbody>
+</table>
+<p>Three structural facts shape the analysis. The <b>10.90.7.0/24 enclave is an island</b> — its four hosts talk only
+   to each other and their own proxy, with no edge to any other segment. The <b>OT segments are equally isolated</b>,
+   with no IT-to-OT edge anywhere in the graph. And the <b>workstation fleet is perfectly uniform</b>: 40 hosts, the
+   same services, the same six servers — which makes any single-host deviation stand out, and any
+   <em>fleet-wide</em> anomaly a question about the build rather than about an intruder.</p>
+
+<h2>Master timeline</h2>
+<p>All times UTC. Bars are activity spanning the capture; dots are discrete events. Hover any mark for detail;
+   the full event list with exact timestamps follows.</p>
+
+<div class="tl"><div class="tl-inner">
+  <div class="tl-axis">
+    <span class="tl-tick" style="left:0%">00:00</span>
+    <span class="tl-tick" style="left:16.7%">04:00</span>
+    <span class="tl-tick" style="left:33.3%">08:00</span>
+    <span class="tl-tick" style="left:50%">12:00</span>
+    <span class="tl-tick" style="left:66.7%">16:00</span>
+    <span class="tl-tick" style="left:83.3%">20:00</span>
+    <span class="tl-tick" style="left:100%">24:00</span>
+  </div>
+
+  <div class="lane"><div class="lane-label"><b>PATH A</b>C2 &amp; lateral movement</div>
+    <div class="lane-track">
+      <div class="span critical" style="left:0.2%;right:0%" title="00:03:00 → 24:01:50 — 3,456 TLS beacons, 10.90.7.30 → cdn-analytics-sync.xyz, 25.03 s mean interval"></div>
+      <div class="ev critical" style="left:0.2%"  title="00:03:00 — C2 beacon begins (10.90.7.30 → 10.90.7.254:443, SNI cdn-analytics-sync.xyz)"></div>
+      <div class="ev critical" style="left:38.5%" title="09:14:30 — WinRM POST /wsman to ws-fin07 (10.90.7.61), Microsoft WinRM Client, 5,178 B out"></div>
+      <div class="ev critical" style="left:40.4%" title="09:41:10 — SMB 10.90.7.61 → 10.90.7.80:445 over NTLM — a novel graph edge"></div>
+      <div class="ev warning"  style="left:41.9%" title="10:03:44 — Bare HTTP 10.90.7.30 → 10.90.7.254:80, UA 'Mozilla/5.0', 89 B out / 725 B in"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH B</b>Fixed-size upload</div>
+    <div class="lane-track">
+      <div class="span serious" style="left:0%;right:0%" title="Continuous — 520 flows from 40 workstations to 10.30.9.30:443, each exactly 8,402,097 B out against ~714 B in"></div>
+      <div class="ev serious" style="left:0.05%" title="00:00:47 — earliest 8,402,097-byte upload, out/in ratio 11,768:1, duration 6.5 s"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH C</b>Cleartext admin bind</div>
+    <div class="lane-track">
+      <div class="span serious" style="left:0.1%;right:0%" title="Continuous — 1,440 LDAP simple binds as cn=admin,dc=example,dc=com over cleartext port 389"></div>
+      <div class="ev serious" style="left:0.1%" title="00:01:22 — first cleartext LDAP simple bind as cn=admin"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH D</b>Service-account FTP</div>
+    <div class="lane-track">
+      <div class="ev critical" style="left:28.0%" title="06:43:12 — FTP svc_backup RETR db_dump; PASV data channel redirected to 10.20.5.20:50000 (address absent from the topology)"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH E</b>Binary channel on port 143</div>
+    <div class="lane-track">
+      <div class="span serious" style="left:0.15%;right:0%" title="00:02:07 → 23:59 — 720 flows from all 40 workstations to 10.30.9.25:143, service 'unknown', every one throwing an IMAP Binpac exception"></div>
+      <div class="ev serious" style="left:0.15%" title="00:02:07 — first unparseable session on the IMAP port; packet segment begins \x02\xdf, not ASCII"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH F</b>OT process write</div>
+    <div class="lane-track">
+      <div class="span warning" style="left:0%;right:0%" title="Continuous — OPC UA sessions 10.40.1.20 → 10.40.2.14 use anonymous identity tokens throughout"></div>
+      <div class="ev serious" style="left:61.9%" title="14:52:48 — Modbus WRITE_SINGLE_REGISTER, 10.40.1.10 → 10.40.2.11 unit 1 — the only write in 5,761 transactions"></div>
+    </div></div>
+
+  <div class="lane"><div class="lane-label"><b>PATH G</b>Prompt injection</div>
+    <div class="lane-track">
+      <div class="ev serious" style="left:71.0%" title="17:02:24 — HTTP from 10.30.0.29 with User-Agent 'Mozilla/5.0 (ignore all previous instruc…'"></div>
+    </div></div>
+
+  <div class="tl-legend">
+    <span><i class="dot" style="background:var(--critical)"></i> Critical</span>
+    <span><i class="dot" style="background:var(--serious)"></i> Serious</span>
+    <span><i class="dot" style="background:var(--warning)"></i> Warning</span>
+    <span>● discrete event &nbsp;·&nbsp; ▬ continuous activity</span>
+  </div>
+</div></div>
+
+<table>
+  <thead><tr><th style="width:78px">Time UTC</th><th style="width:44px">Path</th><th>Event</th><th style="width:96px">Severity</th><th style="width:120px">Evidence row</th></tr></thead>
+  <tbody>
+    <tr><td class="n">00:00:47</td><td class="n">B</td><td>First 8,402,097-byte upload to <span class="ip">10.30.9.30</span>:443 against a 714-byte response — out/in ratio <b>11,768:1</b>, duration 6.5 s</td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">F-2 / F-14</td></tr>
+    <tr><td class="n">00:01:22</td><td class="n">C</td><td>First LDAP <code>bind simple</code> as <code>cn=admin,dc=example,dc=com</code> over cleartext 389</td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">W-8 / A-6</td></tr>
+    <tr><td class="n">00:02:07</td><td class="n">E</td><td>First unparseable session on <span class="ip">10.30.9.25</span>:143 — IMAP analyzer throws a Binpac exception; packet segment starts <code>\x02\xdf</code></td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">P-7 / C-19</td></tr>
+    <tr><td class="n">00:03:00</td><td class="n">A</td><td>C2 beacon begins — <span class="ip">10.90.7.30</span> → <span class="ip">10.90.7.254</span>:443, SNI <code>cdn-analytics-sync.xyz</code>; 3,456 sessions at 25.03 s to 00:01:50 next day</td><td><span class="badge b-critical">● Critical</span></td><td class="n">A-5 / T-12</td></tr>
+    <tr><td class="n">06:43:12</td><td class="n">D</td><td><span class="ip">10.30.0.40</span> authenticates FTP as <code>svc_backup</code>, <code>RETR db_dump</code>; PASV directs the data channel to <span class="ip">10.20.5.20</span>:50000</td><td><span class="badge b-critical">● Critical</span></td><td class="n">M-1 / A-6</td></tr>
+    <tr><td class="n">09:14:30</td><td class="n">A</td><td>WinRM <code>POST /wsman</code> <span class="ip">10.90.7.30</span> → <span class="ip">10.90.7.61</span> (<code>ws-fin07.corp.local</code>), 5,178 B out — a first-ever edge</td><td><span class="badge b-critical">● Critical</span></td><td class="n">W-18 / C-1</td></tr>
+    <tr><td class="n">09:41:10</td><td class="n">A</td><td><span class="ip">10.90.7.61</span> → <span class="ip">10.90.7.80</span>:445 SMB over NTLM — the second first-ever edge, 26.7 min later</td><td><span class="badge b-critical">● Critical</span></td><td class="n">C-1 / F-23</td></tr>
+    <tr><td class="n">10:03:44</td><td class="n">A</td><td>Bare HTTP <span class="ip">10.90.7.30</span> → <span class="ip">10.90.7.254</span>:80, UA <code>Mozilla/5.0</code>, 89 B out / 725 B in</td><td><span class="badge b-warning">▲ Warning</span></td><td class="n">H-1 / F-23</td></tr>
+    <tr><td class="n">14:52:48</td><td class="n">F</td><td>Modbus <code>WRITE_SINGLE_REGISTER</code> unit 1, <span class="ip">10.40.1.10</span> → <span class="ip">10.40.2.11</span> — the only write in 5,761 Modbus transactions</td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">O-2 / OT-MODBUS</td></tr>
+    <tr><td class="n">17:02:24</td><td class="n">G</td><td><span class="ip">10.30.0.29</span> issues its only HTTP request of the capture, carrying User-Agent <code>Mozilla/5.0 (ignore all previous instruc…</code></td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">H-1 / H-5</td></tr>
+    <tr><td class="n">unknown</td><td class="n">F</td><td>All three OT polling streams show a maximum inter-message gap of ~250 s against means of 7.5–30 s — a coincident blackout the aggregate query cannot place in time</td><td><span class="badge b-serious">◆ Serious</span></td><td class="n">O-4</td></tr>
+  </tbody>
+</table>
+
+<h2>Path A — C2 foothold in the management enclave, then two-hop lateral movement</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH A</span>
+    <div class="path-title"><h3>Beaconing admin workstation pivots into the file server</h3>
+      <span class="tag">The most complete chain in the capture. Every stage is independently evidenced, and this run added novel-edge confirmation for both hops.</span></div>
+    <span class="badge b-critical"><span class="glyph">●</span>Critical · high confidence</span>
+  </div>
+
+  <h4>Kill chain</h4>
+  <div class="chain">
+    <div class="step"><span class="k">1 · C2 established</span><span class="v"><span class="ip">10.90.7.30</span> beacons to <code>cdn-analytics-sync.xyz</code> through its proxy</span><span class="t">from 00:03:00 — predates capture</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">2 · Remote execution</span><span class="v">WinRM <code>POST /wsman</code> to <code>ws-fin07</code>, 5,178 B of SOAP</span><span class="t">09:14:30</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">3 · Hop two</span><span class="v"><code>ws-fin07</code> reaches the file server over SMB/NTLM</span><span class="t">09:41:10 (+26.7 min)</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">4 · Check-in</span><span class="v">Short bare-HTTP request back through the proxy</span><span class="t">10:03:44 (+22.6 min)</span></div>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">A-5</td><td>3,456 sessions, mean interval <b>25.03 s</b>, interval variance 47.2, spanning 24.03 h</td><td>Duty cycle is ~100% of the capture including all night. The small non-zero variance is jitter around a fixed sleep, not noise</td></tr>
+      <tr><td class="n">T-12</td><td>Client bytes <b>fixed at 1,968 per session, variance 0.0</b>; server 731 mean / 733 max; mean duration 0.01 s</td><td>Byte-identical requests with slightly variable responses is the poll-for-tasking shape. Total is only 6.5 MiB up / 2.4 MiB down — tasking, not exfiltration</td></tr>
+      <tr><td class="n">C-1</td><td><b>Both hops are novel edges</b> — <span class="ip">.30</span>→<span class="ip">.61</span> and <span class="ip">.61</span>→<span class="ip">.80</span> each appear once, late in the capture, between hosts that had never communicated</td><td>New this run. In an enclave whose only other traffic is <span class="ip">.30</span>↔<span class="ip">.254</span>, two fresh directed edges 27 minutes apart is the definition of lateral movement</td></tr>
+      <tr><td class="n">W-18</td><td>Six <code>POST /wsman</code> requests, <code>Microsoft WinRM Client</code>, 5,178 B out / 1,697 B in, connection <code>SF</code></td><td>A completed remote-execution session, not a probe. The volume is consistent with commands and their output</td></tr>
+      <tr><td class="n">F-23<br>C-17</td><td>Both hops are singleton, bottom-percentile triples in 24 h of traffic</td><td>Rarity scoring independently surfaces the same two flows without any knowledge of the beacon</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK</dt><dd>T1071.001 Web Protocols → T1573.002 Encrypted Channel → T1021.006 WinRM → T1021.002 SMB/Windows Admin Shares</dd>
+    <dt>Benign twin</dt><dd>A monitoring agent polling a SaaS endpoint, plus an administrator using WinRM and then browsing a share. This is the explanation to disprove.</dd>
+    <dt>What confirms it</dt><dd>Registration age and hosting of the C2 domain; process ancestry on <span class="ip">10.90.7.30</span> at 00:03 and 09:14; whether the NTLM identity on hop two has ever authenticated from <span class="ip">10.90.7.61</span> before; what was read on <span class="ip">10.90.7.80</span>.</dd>
+    <dt>Note on C-2</dt><dd>The movement-chain characteristic was judged <b>No</b> this run on the reasoning that the two hops use <em>different</em> protocols and are 27 minutes apart, so they do not match the tight same-protocol chain the characteristic describes. That is a correct reading of the <em>characteristic's wording</em> and the wrong conclusion about the <em>traffic</em> — the model's own text describes the two-hop sequence while rejecting it. C-1 and F-23 carry the same finding and both say Yes.</dd>
+  </dl>
+
+  <div class="callout"><p><b>The pacing is the tell.</b> A script chains hops in seconds. Twenty-seven minutes between
+  WinRM and the onward SMB connection, then another twenty-two before the check-in, is the cadence of a human working
+  interactively. Set against a beacon that never pauses for 24 hours, this reads as hands-on-keyboard activity riding
+  an automated implant.</p></div>
+</div>
+
+<h2>Path B — Fleet-wide fixed-size upload</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH B</span>
+    <div class="path-title"><h3>4.07 GiB out, 371 KiB back — an upload, not a synchronisation</h3>
+      <span class="tag">This run's byte-ratio evidence materially strengthens the case compared with the uniform-size framing alone.</span></div>
+    <span class="badge b-serious"><span class="glyph">◆</span>Serious · medium-high confidence</span>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">F-2</td><td>Every flow: <b>8,402,097 bytes out against 713–714 bytes in</b> — an out/in ratio of <b>11,768:1</b> — completing in 6.4–6.5 s</td><td><b>New this run, and it changes the reading.</b> A synchronisation protocol is bidirectional. A 714-byte reply to an 8.4 MB payload is an acknowledgement — this is one-way bulk upload</td></tr>
+      <tr><td class="n">F-14</td><td>40 hosts, 520 flows, <b>every flow exactly 8,402,097 bytes, variance 0.0</b>, totalling 4,369,090,440 B (4.07 GiB)</td><td>Zero variance across 520 independent flows is machine-generated by definition. Real user uploads never repeat a byte count</td></tr>
+      <tr><td class="n">C-17</td><td>The heaviest workstation→<span class="ip">.30</span> relationships sit in the <b>3rd–5th percentile of frequency</b> while carrying 42–84 MB each</td><td>Rare relationships moving large volume is the highest-value quadrant of rarity scoring</td></tr>
+      <tr><td class="n">C-12</td><td>4,840 TLS flows cross the 10.30.0→10.30.9 zone edge carrying 4.38 GB outbound</td><td>Confirms the volume crosses a segment boundary rather than staying local</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK</dt><dd>T1074.001 Local Data Staging · T1030 Data Transfer Size Limits · T1020 Automated Exfiltration (if <span class="ip">.30</span> egresses)</dd>
+    <dt>Benign twin</dt><dd>A backup or EDR client uploading fixed-size chunks produces this signature, and fleet-wide uniformity argues for managed software rather than an intruder. The 11,768:1 ratio does not distinguish the two — backup agents also upload one-way.</dd>
+    <dt>The decisive question</dt><dd>Does <span class="ip">10.30.9.30</span> send that volume onward? The capture cannot say: <span class="ip">.30</span> has no edge to either proxy in the topology, so within these 24 hours <b>4 GiB arrived and nothing left</b>. Identify the service and confirm whether it has egress the sensor cannot see.</dd>
+    <dt>Verdict note</dt><dd>F-14 was judged Yes in run 1 and No in run 2 — the second run described the identical data as "routine automated client-server application synchronization". The F-2 ratio is the evidence that undercuts that wording.</dd>
+  </dl>
+</div>
+
+<h2>Path C — Domain admin credential broadcast in cleartext</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH C</span>
+    <div class="path-title"><h3>All 40 workstations bind LDAP as <code>cn=admin</code> on port 389</h3>
+      <span class="tag">Not an intrusion — a condition that makes one trivial, and the most plausible source of any credential used elsewhere.</span></div>
+    <span class="badge b-serious"><span class="glyph">◆</span>Serious · high confidence</span>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">W-8<br>A-6</td><td>Successful <code>bind simple</code> to <span class="ip">10.30.9.10</span>:389 with object <code>cn=admin,dc=example,dc=com</code>, from workstations across the fleet, no SASL and no TLS</td><td>Port 389 is unencrypted. A simple bind puts the password on the wire for any passive listener on the path</td></tr>
+      <tr><td class="n">C-12</td><td>1,440 LDAP flows over the zone edge, from all 40 sources, across the full 24 h</td><td>Continuous, not incidental — roughly one exposure per minute, all day</td></tr>
+      <tr><td class="n">W-8</td><td>Every observed bind uses the <b>same privileged account</b> rather than per-user identities</td><td>One administrative credential shared by 40 endpoints has no attribution value and a blast radius equal to the directory</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK</dt><dd>T1040 Network Sniffing · T1552.001 Credentials In Files · T1078.002 Valid Accounts: Domain</dd>
+    <dt>Adjudication</dt><dd>Both this run's rows agree — A-6 flipped from No to Yes, joining W-8. Run 1's reasoning for No was that fleet-wide uniformity indicates normal infrastructure; that is exactly backwards, since uniformity establishes the exposure is systemic.</dd>
+    <dt>Link to Path A</dt><dd>Path A shows a credential accepted at 09:14 in an enclave with no LDAP traffic of its own. This path shows an administrative credential broadcast in cleartext all day. The connection is <b>plausible and unproven</b> — nothing in the capture ties them together.</dd>
+  </dl>
+</div>
+
+<h2>Path D — Database dump pulled to a host outside the known network</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH D</span>
+    <div class="path-title"><h3><code>svc_backup</code> retrieves <code>db_dump</code> over cleartext FTP, data channel redirected off-graph</h3>
+      <span class="tag">Small in volume, large in implication — the destination address exists in no observed segment.</span></div>
+    <span class="badge b-critical"><span class="glyph">●</span>Critical · high confidence</span>
+  </div>
+
+  <h4>Kill chain</h4>
+  <div class="chain">
+    <div class="step"><span class="k">1 · Credential</span><span class="v"><code>svc_backup</code> authenticates to <span class="ip">10.30.9.20</span>:21 in cleartext</span><span class="t">06:43:12</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">2 · Passive mode</span><span class="v">Server replies <code>227 Entering Passive Mode (10,20,5,20,195,80)</code></span><span class="t">same second</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">3 · Retrieval</span><span class="v"><code>RETR /home/svc_backup/db_dump</code> → <code>226 Transfer complete</code></span><span class="t">+2 ms</span></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="k">4 · Off-graph</span><span class="v">Data channel <span class="ip">10.20.5.20</span>:50000 — <b>not one of the 61 nodes</b></span><span class="t">destination unknown</span></div>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">M-1</td><td>The PASV response encodes <span class="ip">10.20.5.20</span>:50000 while the control connection is <span class="ip">10.30.0.40</span> ↔ <span class="ip">10.30.9.20</span></td><td>The data channel points at a third party — the FTP-bounce pattern. <span class="ip">10.20.5.0/24</span> appears nowhere in the topology or in any other query result</td></tr>
+      <tr><td class="n">A-6</td><td><code>svc_backup</code> credentials transit in the clear on port 21</td><td>Exposure and use in the same session</td></tr>
+      <tr><td class="n">I-9</td><td><span class="ip">10.30.0.40</span> is one of only two workstations whose service mix deviates from the other 38 — it alone carries <code>ftp</code></td><td>Peer-group deviation independently isolates this host without any knowledge of the FTP session itself</td></tr>
+      <tr><td class="n">F-23<br>C-17</td><td>The flow is a singleton, bottom-percentile triple</td><td>Rarity plus a database dump plus an unknown destination is the strongest small-volume combination in the capture</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK</dt><dd>T1078 Valid Accounts → T1005 Data from Local System → T1048.003 Exfiltration Over Unencrypted Protocol · T1071.002 File Transfer Protocols</dd>
+    <dt>Caveat on size</dt><dd>The logged <code>file_size</code> is <b>1,024 bytes</b>. Either the dump is a stub or a pointer, or the transfer was truncated at the sensor. Do not report "a database was stolen" — report that a file named <code>db_dump</code> was retrieved and its data channel was aimed off-network.</dd>
+    <dt>Immediate action</dt><dd>Establish whether <span class="ip">10.20.5.0/24</span> routes at all. If it does not, this was a failed or blind bounce. If it does and the sensor cannot see it, the capture has a monitoring blind spot that outranks everything else in this report.</dd>
+  </dl>
+</div>
+
+<h2>Path E — A binary protocol on the IMAP port, fleet-wide</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH E</span>
+    <div class="path-title"><h3>720 sessions on port 143 that Zeek cannot parse as IMAP</h3>
+      <span class="tag">New in this analysis. Six characteristics touched this traffic and five judged it benign — it is the most under-examined finding in the set.</span></div>
+    <span class="badge b-serious"><span class="glyph">◆</span>Serious · medium confidence</span>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">P-7<br>C-19</td><td>Every analyzer violation in the entire capture is the <b>IMAP parser failing on <span class="ip">10.30.9.25</span>:143</b>, with packet segments beginning <code>\x02\xdf \x00\x00\x10\x02\x00\x000</code></td><td>IMAP is line-based ASCII — a server greets with <code>* OK</code>, a client sends <code>A001 LOGIN</code>. A session opening with binary bytes is not IMAP. Zeek attached the analyzer because of the port, then gave up</td></tr>
+      <tr><td class="n">F-7<br>C-12</td><td><b>720 flows from all 40 workstations</b> to one destination on 143, service classified <code>unknown</code>, spanning 86,242 s — the entire capture</td><td>This is not one broken client. It is the whole fleet, all day, on a port that mail policy allows through</td></tr>
+      <tr><td class="n">F-16</td><td>Per flow: <b>~116 bytes out, ~428 bytes in</b>; roughly 18 flows per host over 24 h, about one every 80 minutes</td><td>Small, regular, bidirectional message exchange. That is the shape of a command channel or a telemetry protocol — it is not bulk anything</td></tr>
+      <tr><td class="n">C-17</td><td>The 143 triples land in the bottom frequency percentile despite running all day</td><td>Rarity scoring flags them even though the aggregate volume is unremarkable</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK</dt><dd>T1571 Non-Standard Port · T1001.003 Protocol or Service Impersonation · T1095 Non-Application Layer Protocol · T1572 Protocol Tunneling</dd>
+    <dt>Why this deserves attention</dt><dd>"Wrong protocol on the right port" is the strongest of the three port tests in the hunt catalogue, precisely because it is how tunnels and custom C2 hide behind an allowed egress rule. Here it fires across the entire estate and the analyzer failure is unambiguous.</dd>
+    <dt>Benign twin</dt><dd><b>Real and plausible.</b> A proprietary mail client or a vendor sync protocol sharing the IMAP port would look identical, and the topology does show genuine parsed <code>imap</code> and <code>imap/imf</code> traffic to the same server. Zeek Binpac exceptions on IMAP are also common with unusual literals and IDLE handling.</dd>
+    <dt>The test that settles it</dt><dd>Carve one of these sessions from the PCAP and identify the first bytes. If it is a documented mail-client dialect, close it and tune the analyzer. If the payload is opaque or high-entropy, this is a fleet-wide covert channel and outranks Path B.</dd>
+  </dl>
+</div>
+
+<h2>Path F — OT process write during a coincident polling blackout</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH F</span>
+    <div class="path-title"><h3>The only Modbus write in the capture, on a network that otherwise only reads</h3>
+      <span class="tag">Weakest of the seven on evidence, highest on consequence.</span></div>
+    <span class="badge b-warning"><span class="glyph">▲</span>Warning · low-medium confidence</span>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">O-2<br>OT-MODBUS</td><td><code>WRITE_SINGLE_REGISTER</code> to unit 1 at 14:52:48 from the designated master <span class="ip">10.40.1.10</span> — <b>2 events out of 5,761 Modbus transactions</b></td><td>A network that reads 5,759 times and writes twice owes an explanation for those two writes. The source is the legitimate master, which argues against a rogue master but not against a compromised one</td></tr>
+      <tr><td class="n">O-4</td><td>All three protocols show a maximum cycle gap of <b>~250 s</b> (modbus 249.999, dnp3 250.002, s7comm 249.995) against means of 14.98, 29.98 and 7.49 s</td><td>Three independent streams stalling for the same ~250 s is not three coincidences. Something interrupted the supervisory link — or the sensor — for four minutes</td></tr>
+      <tr><td class="n">O-14</td><td>OPC UA sessions <span class="ip">10.40.1.20</span> → <span class="ip">10.40.2.14</span> use <b>anonymous identity tokens</b> continuously</td><td>Unauthenticated control-plane access to a field device. A standing condition rather than an event</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATT&amp;CK for ICS</dt><dd>T0836 Modify Parameter · T1692.001 Unauthorized Message: Command Message · T1691 Block Operational Technology Message · T1694.001 Insecure Credentials</dd>
+    <dt>Why confidence is low</dt><dd>The write came from the correct master to the correct slave with the correct function code. Nothing about it is anomalous <em>except</em> its rarity, and the 250 s gaps carry no timestamp — the O-4 query aggregates, so it cannot be shown that the blackout and the write coincide.</dd>
+    <dt>The one query that settles it</dt><dd>Re-run O-4 without aggregation to place the gaps in time. <b>If a gap brackets 14:52:48</b> — blind the operator, then write — this becomes serious. If the gaps fall elsewhere, the path collapses into two unrelated maintenance artefacts.</dd>
+  </dl>
+</div>
+
+<h2>Path G — Prompt injection aimed at the analysis pipeline</h2>
+<div class="path">
+  <div class="path-head">
+    <span class="path-id">PATH G</span>
+    <div class="path-title"><h3>An attack on the detection layer, not on the network</h3>
+      <span class="tag">The payload targets whatever language model reads the logs — which in this workflow is the step that produced these verdicts.</span></div>
+    <span class="badge b-serious"><span class="glyph">◆</span>Serious · medium-high confidence</span>
+  </div>
+
+  <h4>Evidence</h4>
+  <table>
+    <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td class="n">H-1</td><td>User-Agent <code>Mozilla/5.0 (ignore all previous instruc…</code> from <span class="ip">10.30.0.29</span> at 17:02:24</td><td>No browser emits this. The string is constructed to be read by a language model downstream of packet capture, not by a web server</td></tr>
+      <tr><td class="n">H-5</td><td>Header set is <code>HOST,USER-AGENT</code> only — two headers, no Accept, no Accept-Language, no Referer</td><td>A minimal scripted client. Real browsers send a dozen headers in a stable order</td></tr>
+      <tr><td class="n">I-9<br>F-23</td><td><span class="ip">10.30.0.29</span> is one of only two hosts deviating from the 38-peer baseline, and the flow is a singleton — 140 B out, 40 B in</td><td>One host, one request, one purpose. The tiny response says the request was never about retrieving content</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="kv">
+    <dt>ATLAS</dt><dd>AML.T0051.001 LLM Prompt Injection: Indirect · AML.T0068 LLM Prompt Obfuscation · AML.T0015 Evade AI Model</dd>
+    <dt>Effectiveness</dt><dd><b>It did not work in either run</b> — H-1 and H-5 were judged malicious both times. The attempt is the finding, not a compromise of the pipeline.</dd>
+    <dt>Action</dt><dd>Treat every log field as untrusted input to the AI layer: delimit it, label it as data, and never let model output alone set a verdict. Then triage <span class="ip">10.30.0.29</span> as a compromised endpoint in its own right.</dd>
+  </dl>
+</div>
+
+<h2>Systemic condition — identity architecture, not an attack path</h2>
+<p>Two characteristics fired hard on authentication breadth, and both are better read as a property of the estate
+   than as an intrusion.</p>
+<table>
+  <thead><tr><th style="width:66px">Row</th><th>Observation</th><th>Reading</th></tr></thead>
+  <tbody>
+    <tr><td class="n">C-4</td><td><b>All 40 domain accounts</b> authenticate from <b>17–33 distinct workstations each</b> (mean 23.9), 1,440 Kerberos events in total, every one targeting the single DC</td><td>Credential theft produces breadth on <em>one or a few</em> accounts. Uniform breadth across <em>every</em> account is an architecture — roaming profiles, VDI, shared terminals — or a synthetic dataset</td></tr>
+    <tr><td class="n">C-8</td><td>Dozens of accounts authenticating from two different sources within 2–15 seconds of each other</td><td>The same phenomenon viewed per-event. It is "impossible travel" only if users are expected to be pinned to one workstation</td></tr>
+  </tbody>
+</table>
+<p>The consequence matters more than the label: <b>with every account roaming across most of the fleet, source-based
+   authentication anomalies are unusable as an intrusion signal here.</b> Establish whether this is the intended
+   model. If it is, exclude C-4 and C-8 from future hunts on this estate. If it is not, the finding is that 40
+   credentials are in use across 40 machines with no attribution — which would be more serious than any single path
+   above.</p>
+
+<h2 id="stability">Adjudication stability between the two runs</h2>
+<p>The same 232 characteristics were judged twice against identical evidence. Eight verdicts changed.</p>
+<table>
+  <thead><tr><th style="width:66px">Row</th><th style="width:60px">Run 1</th><th style="width:60px">Run 2</th><th>Assessment</th></tr></thead>
+  <tbody>
+    <tr><td class="n">A-6</td><td class="n">No</td><td class="n"><b>Yes</b></td><td><span class="badge b-good">✓ Run 2 correct</span> — cleartext admin bind is a real exposure; run 1 mistook fleet-wide uniformity for normality</td></tr>
+    <tr><td class="n">I-9</td><td class="n">No</td><td class="n"><b>Yes</b></td><td><span class="badge b-good">✓ Run 2 correct</span> — it isolates exactly the two hosts that appear in Paths D and G</td></tr>
+    <tr><td class="n">F-2</td><td class="n">No</td><td class="n"><b>Yes</b></td><td><span class="badge b-good">✓ Run 2 correct</span> — the 11,768:1 ratio is the strongest framing of Path B</td></tr>
+    <tr><td class="n">C-1</td><td class="n">No</td><td class="n"><b>Yes</b></td><td><span class="badge b-good">✓ Run 2 correct</span> — novel-edge detection independently confirms both Path A hops</td></tr>
+    <tr><td class="n">C-4</td><td class="n">No</td><td class="n"><b>Yes</b></td><td><span class="badge b-warning">▲ Shape right, inference wrong</span> — real pattern, but systemic rather than adversarial</td></tr>
+    <tr><td class="n">F-14</td><td class="n"><b>Yes</b></td><td class="n">No</td><td><span class="badge b-critical">✗ Run 1 correct</span> — identical data re-described as "routine synchronization"</td></tr>
+    <tr><td class="n">C-2</td><td class="n"><b>Yes</b></td><td class="n">No</td><td><span class="badge b-critical">✗ Run 1 correct</span> — rejected on the characteristic's wording while describing the movement chain in its own explanation</td></tr>
+    <tr><td class="n">C-15</td><td class="n">No</td><td class="n">—</td><td>Not adjudicated in run 2</td></tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <p><b>What to take from this.</b> Four flips improved the result and two lost real findings, on evidence that did
+  not change. A single adjudication pass is therefore not a reliable filter for borderline rows — the strong signals
+  (the beacon, the FTP bounce, the cleartext bind) were stable across both runs, while everything in the middle band
+  moved. Run the triage two or three times and take the <b>union of positives</b> as the review queue, or reserve the
+  model for prioritisation and keep the yes/no decision with an analyst.</p>
+</div>
+
+<h2>Do these form one operation?</h2>
+<p>There is a coherent story joining four of the seven, and it should be held as a hypothesis rather than a conclusion.</p>
+<div class="callout">
+  <p><b>The composite reading.</b> An administrative credential is broadcast in cleartext across the estate all day
+  <b>(C)</b>. An implant on the management workstation has been beaconing since before the capture opened
+  <b>(A)</b>, and mid-morning an operator uses that channel to execute on <code>ws-fin07</code> and reach the file
+  server <b>(A)</b>. Three hours earlier a service account pulls a database dump with its data channel aimed at an
+  address that does not exist in this network <b>(D)</b>. Late in the day a host that has never spoken HTTP emits a
+  single request whose only payload is an instruction to a language model to disregard its instructions <b>(G)</b>.</p>
+  <p>Each is individually explainable. The combination — a persistent channel, a credential exposure that would
+  supply it, a rare off-network transfer, and an anti-analysis payload — is the shape of an intrusion in its
+  collection phase.</p>
+</div>
+<p><b>What argues against a single operation:</b> the segments are genuinely isolated in the topology. There is no
+   observed edge between 10.30.0/9 and 10.90.7, so Path A's actor and Path C's exposed credential live on networks
+   that never touch in this capture. Paths B, E and F are each better explained by ordinary operations than by an
+   adversary. Treating all seven as one campaign would over-fit the evidence.</p>
+<p><b>The defensible position:</b> Path A is a live intrusion. Path D is an unexplained data movement that must be
+   resolved today. Path C is a standing exposure that would explain a great deal if the intrusion spreads. Paths B,
+   E, F and G are open questions with specific, cheap tests attached.</p>
+
+<h2>What this capture cannot tell you</h2>
+<ul>
+  <li><b>No external visibility.</b> All 61 nodes are internal. Every internet destination is inferred from TLS SNI at a proxy hop, so C2 attribution, domain age and hosting reputation are unavailable from this data.</li>
+  <li><b>The beacon predates the capture</b> — it is already running three minutes in. Initial access happened before this window.</li>
+  <li><b>No packet payloads.</b> Verdicts rest on Zeek metadata. What the WinRM session executed, what the SMB session read, what <code>db_dump</code> contained, and what the port-143 sessions carry are all outside this evidence.</li>
+  <li><b>Aggregate queries lose time.</b> O-4 reports a 250 s maximum gap without saying when — precisely what Path F needs.</li>
+  <li><b>One capture, no baseline.</b> "First-seen" and "rare" mean within 24 hours. A longer history would sharpen every rarity-based finding and dissolve some of them.</li>
+  <li><b>Verdicts are not stable</b> across adjudication runs on identical evidence — see the section above.</li>
+</ul>
+
+<h2>Prioritised next actions</h2>
+<table>
+  <thead><tr><th style="width:44px">#</th><th>Action</th><th style="width:52px">Path</th><th style="width:96px">Urgency</th></tr></thead>
+  <tbody>
+    <tr><td class="n">1</td><td>Isolate <span class="ip">10.90.7.30</span> and capture memory before reboot. Block <code>cdn-analytics-sync.xyz</code> at both proxies and search all logs for that SNI on other hosts</td><td class="n">A</td><td><span class="badge b-critical">● Now</span></td></tr>
+    <tr><td class="n">2</td><td>Determine whether <span class="ip">10.20.5.0/24</span> routes. Audit <code>svc_backup</code> — where it may authenticate from, and what <code>db_dump</code> actually contains</td><td class="n">D</td><td><span class="badge b-critical">● Now</span></td></tr>
+    <tr><td class="n">3</td><td>Forensics on <span class="ip">10.90.7.61</span> and <span class="ip">10.90.7.80</span>; identify the NTLM account used on hop two and reset it, along with <code>cn=admin</code></td><td class="n">A, C</td><td><span class="badge b-critical">● Now</span></td></tr>
+    <tr><td class="n">4</td><td>Carve one port-143 session from the PCAP and identify the protocol from its first bytes</td><td class="n">E</td><td><span class="badge b-serious">◆ Today</span></td></tr>
+    <tr><td class="n">5</td><td>Re-run O-4 unaggregated to timestamp the 250 s OT gaps and test whether one brackets the 14:52:48 Modbus write</td><td class="n">F</td><td><span class="badge b-serious">◆ Today</span></td></tr>
+    <tr><td class="n">6</td><td>Identify <span class="ip">10.30.9.30</span>; confirm whether the 4.07 GiB is a sanctioned backup and whether that host egresses</td><td class="n">B</td><td><span class="badge b-serious">◆ Today</span></td></tr>
+    <tr><td class="n">7</td><td>Triage <span class="ip">10.30.0.29</span> as a compromised endpoint; harden the AI triage layer to treat log fields as untrusted data</td><td class="n">G</td><td><span class="badge b-serious">◆ Today</span></td></tr>
+    <tr><td class="n">8</td><td>Confirm whether the roaming-identity model in C-4/C-8 is intended; if so, exclude those characteristics from this estate's hunts</td><td class="n">—</td><td><span class="badge b-warning">▲ This week</span></td></tr>
+    <tr><td class="n">9</td><td>Move LDAP to 636 with per-service accounts, retiring the shared <code>cn=admin</code> bind across all 40 workstations</td><td class="n">C</td><td><span class="badge b-warning">▲ This week</span></td></tr>
+    <tr><td class="n">10</td><td>Extend sensor coverage so the 10.90.7 and 10.40.x segments are not visible only through their own proxies</td><td class="n">All</td><td><span class="badge b-warning">▲ This week</span></td></tr>
+  </tbody>
+</table>
+
+<div class="foot">
+  <p>Built from <code>sqlQueryAnalysis.xlsx</code> (232 hunt characteristics; 16 positive, 85 negative, 194 without
+  evidence to judge) and <code>topology.gexf</code> (61 nodes, 1,135 service edges), cross-referenced against the
+  previous adjudication of the same capture. Framework references follow MITRE ATT&amp;CK Enterprise v19.2,
+  ATT&amp;CK for ICS v19.2 and MITRE ATLAS v5.6.0. Every path above is a hypothesis with its supporting rows named;
+  none is a confirmed incident. Timestamps are UTC as recorded by the sensor.</p>
+</div>
+
+</div>
+
+</body>
+</html>

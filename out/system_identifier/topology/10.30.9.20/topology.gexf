@@ -1,0 +1,625 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2026-08-17">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <attributes mode="static" class="edge">
+      <attribute id="0" title="proto" type="string" />
+      <attribute id="1" title="service" type="string" />
+      <attribute id="2" title="networkx_key" type="long" />
+    </attributes>
+    <nodes>
+      <node id="10.30.9.20" label="10.30.9.20" />
+      <node id="10.30.0.12" label="10.30.0.12" />
+      <node id="10.30.0.41" label="10.30.0.41" />
+      <node id="10.30.0.25" label="10.30.0.25" />
+      <node id="10.30.0.32" label="10.30.0.32" />
+      <node id="10.30.0.34" label="10.30.0.34" />
+      <node id="10.30.0.20" label="10.30.0.20" />
+      <node id="10.30.0.36" label="10.30.0.36" />
+      <node id="10.30.0.35" label="10.30.0.35" />
+      <node id="10.30.0.47" label="10.30.0.47" />
+      <node id="10.30.0.33" label="10.30.0.33" />
+      <node id="10.30.0.23" label="10.30.0.23" />
+      <node id="10.30.0.27" label="10.30.0.27" />
+      <node id="10.30.0.39" label="10.30.0.39" />
+      <node id="10.30.0.30" label="10.30.0.30" />
+      <node id="10.30.0.21" label="10.30.0.21" />
+      <node id="10.30.0.28" label="10.30.0.28" />
+      <node id="10.30.0.40" label="10.30.0.40" />
+      <node id="10.30.0.10" label="10.30.0.10" />
+      <node id="10.30.0.13" label="10.30.0.13" />
+      <node id="10.30.0.24" label="10.30.0.24" />
+      <node id="10.30.0.37" label="10.30.0.37" />
+      <node id="10.30.0.31" label="10.30.0.31" />
+      <node id="10.30.0.38" label="10.30.0.38" />
+      <node id="10.30.0.19" label="10.30.0.19" />
+      <node id="10.30.0.45" label="10.30.0.45" />
+      <node id="10.30.0.14" label="10.30.0.14" />
+      <node id="10.30.0.42" label="10.30.0.42" />
+      <node id="10.30.0.15" label="10.30.0.15" />
+      <node id="10.30.0.26" label="10.30.0.26" />
+      <node id="10.30.0.11" label="10.30.0.11" />
+      <node id="10.30.0.17" label="10.30.0.17" />
+      <node id="10.30.0.48" label="10.30.0.48" />
+      <node id="10.30.0.22" label="10.30.0.22" />
+      <node id="10.30.0.29" label="10.30.0.29" />
+      <node id="10.30.0.44" label="10.30.0.44" />
+      <node id="10.30.0.46" label="10.30.0.46" />
+      <node id="10.30.0.43" label="10.30.0.43" />
+      <node id="10.30.0.49" label="10.30.0.49" />
+      <node id="10.30.0.18" label="10.30.0.18" />
+      <node id="10.30.0.16" label="10.30.0.16" />
+    </nodes>
+    <edges>
+      <edge source="10.30.9.20" target="10.30.0.12" id="0" weight="80">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="0" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.12" id="1" weight="360">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="1" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.41" id="2" weight="70">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="2" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.41" id="3" weight="315">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="3" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.25" id="4" weight="72">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="4" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.25" id="5" weight="324">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="5" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.32" id="6" weight="70">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="6" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.32" id="7" weight="315">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="7" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.34" id="8" weight="88">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="8" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.34" id="9" weight="396">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="9" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.20" id="10" weight="64">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="10" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.20" id="11" weight="288">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="11" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.36" id="12" weight="78">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="12" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.36" id="13" weight="351">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="13" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.35" id="14" weight="80">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="14" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.35" id="15" weight="360">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="15" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.47" id="16" weight="66">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="16" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.47" id="17" weight="297">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="17" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.33" id="18" weight="78">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="18" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.33" id="19" weight="351">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="19" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.23" id="20" weight="60">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="20" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.23" id="21" weight="270">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="21" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.27" id="22" weight="48">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="22" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.27" id="23" weight="216">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="23" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.39" id="24" weight="64">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="24" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.39" id="25" weight="288">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="25" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.30" id="26" weight="78">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="26" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.30" id="27" weight="351">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="27" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.21" id="28" weight="62">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="28" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.21" id="29" weight="279">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="29" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.28" id="30" weight="76">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="30" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.28" id="31" weight="342">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="31" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.40" id="32" weight="80">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="32" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.40" id="33" weight="351">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="33" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.40" id="34" weight="10">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="ftp" />
+          <attvalue for="2" value="80" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.10" id="35" weight="72">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="34" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.10" id="36" weight="324">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="35" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.13" id="37" weight="62">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="36" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.13" id="38" weight="279">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="37" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.24" id="39" weight="64">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="38" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.24" id="40" weight="288">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="39" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.37" id="41" weight="92">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="40" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.37" id="42" weight="414">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="41" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.31" id="43" weight="74">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="42" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.31" id="44" weight="333">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="43" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.38" id="45" weight="60">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="44" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.38" id="46" weight="270">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="45" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.19" id="47" weight="72">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="46" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.19" id="48" weight="324">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="47" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.45" id="49" weight="94">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="48" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.45" id="50" weight="423">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="49" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.14" id="51" weight="66">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="50" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.14" id="52" weight="297">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="51" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.42" id="53" weight="84">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="52" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.42" id="54" weight="378">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="53" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.15" id="55" weight="82">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="54" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.15" id="56" weight="369">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="55" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.26" id="57" weight="64">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="56" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.26" id="58" weight="288">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="57" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.11" id="59" weight="76">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="58" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.11" id="60" weight="342">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="59" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.17" id="61" weight="56">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="60" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.17" id="62" weight="252">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="61" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.48" id="63" weight="76">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="62" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.48" id="64" weight="342">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="63" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.22" id="65" weight="68">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="64" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.22" id="66" weight="306">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="65" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.29" id="67" weight="64">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="66" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.29" id="68" weight="288">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="67" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.44" id="69" weight="56">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="68" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.44" id="70" weight="252">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="69" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.46" id="71" weight="80">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="70" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.46" id="72" weight="360">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="71" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.43" id="73" weight="84">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="72" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.43" id="74" weight="378">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="73" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.49" id="75" weight="80">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="74" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.49" id="76" weight="360">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="75" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.18" id="77" weight="68">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="76" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.18" id="78" weight="306">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="77" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.16" id="79" weight="74">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="tcp" />
+          <attvalue for="2" value="78" />
+        </attvalues>
+      </edge>
+      <edge source="10.30.9.20" target="10.30.0.16" id="80" weight="333">
+        <attvalues>
+          <attvalue for="0" value="tcp" />
+          <attvalue for="1" value="smb2" />
+          <attvalue for="2" value="79" />
+        </attvalues>
+      </edge>
+    </edges>
+  </graph>
+</gexf>

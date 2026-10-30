@@ -1,0 +1,61 @@
+### Network topology
+The analyzed evidence reveals a total of 61 nodes operating across five IPv4 subnets, one IPv4 multicast group, and two IPv6 link-local/multicast structures.
+
+**Observed Subnets and Hosts:**
+- `10.30.0.0/24`: 40 active hosts (`10.30.0.10` through `10.30.0.49`).
+- `10.30.9.0/24`: 6 active hosts (`10.30.9.1`, `.10`, `.20`, `.25`, `.30`, `.254`).
+- `10.40.1.0/24`: 2 active hosts (`10.40.1.10`, `.20`).
+- `10.40.2.0/24`: 5 active hosts (`10.40.2.11` through `.15`).
+- `10.90.7.0/24`: 4 active hosts (`10.90.7.30`, `.61`, `.80`, `.254`).
+- `224.0.0.0/24`: Multicast group containing host `224.0.0.251`.
+- `fe80::/64` & `ff02::/64`: IPv6 link-local hosts (`fe80::ff:fe00:1`, `fe80::ff:fe30:910`) and multicast endpoint (`ff02::1:ff00:1`).
+
+**Communication Paths:**
+- `10.30.0.0/24` <-> `10.30.9.0/24`: Dominant traffic path with 3,350,179 outbound connections from `10.30.0.0/24` to `10.30.9.30` over TCP and TLS v1.3, and 120,416 return connections.
+- `10.40.1.0/24` <-> `10.40.2.0/24`: Bidirectional path (77,765 outbound, 54,723 return connections) transmitting industrial control protocols (OPC UA, S7comm, Modbus/TCP, COTP).
+- `10.30.9.0/24` -> `224.0.0.0/24`: 7,855 mDNS connections originating from `10.30.9.10` to `224.0.0.251`.
+- `10.90.7.0/24`: Intra-subnet communication between `10.90.7.30` and `10.90.7.254` over TCP and TLS without cross-subnet routing.
+- `fe80::/64` -> `ff02::/64`: 1,441 IPv6 neighbor discovery / ICMPv6 multicast connections.
+
+---
+
+### Subnet roles
+
+1. **`10.30.0.0/24`** — **Likely** Enterprise Client / Workstation Subnet.
+   *Summary*: This inference is made based on 40 host addresses generating high volumes of TCP and TLS v1.3 traffic directed toward a single destination server (`10.30.9.30`). This client-to-server communication pattern aligns with standard enterprise user endpoint subnets accessing centralized application infrastructure.
+
+2. **`10.30.9.0/24`** — **Likely** Central Application / Server Subnet.
+   *Summary*: This inference is derived from host `10.30.9.30` acting as the central target for over 3.3 million inbound connections from hosts in the `10.30.0.0/24` subnet. Additionally, host `10.30.9.10` within this segment originates all observed multicast DNS traffic to address `224.0.0.251`.
+
+3. **`10.40.1.0/24`** — **Likely** Industrial Control / Supervisory Subnet.
+   *Summary*: This inference is established from hosts `10.40.1.10` and `10.40.1.20` initiating control sessions to field endpoints in `10.40.2.0/24` using OPC UA, S7comm, Modbus/TCP, and COTP protocols. This structured polling of lower-tier device addresses is characteristic of Human-Machine Interfaces and supervisory control systems.
+
+4. **`10.40.2.0/24`** — **Likely** Operational Technology (OT) / Programmable Logic Controller (PLC) Subnet.
+   *Summary*: This inference is supported by five hosts (`10.40.2.11` to `10.40.2.15`) receiving and responding to industrial control protocols such as S7comm, Modbus/TCP, OPC UA, and COTP. These specialized protocols are strictly utilized to interact with field automation hardware and programmable logic controllers.
+
+5. **`10.90.7.0/24`** — **Uncertain** Isolated Management / Secondary Services Subnet.
+   *Summary*: This inference is based on the subnet exhibiting internal TCP and TLS traffic between `10.90.7.30` and `10.90.7.254` while maintaining complete cross-subnet isolation from other networks. Because specific host-to-service mapping for this subnet is omitted in protocol logs, its precise administrative function cannot be definitively determined.
+
+---
+
+### Infrastructure inferred from protocols/services
+
+1. **Enterprise Identity & Directory Infrastructure** — **Likely** present.
+   *Summary*: This inference is drawn from protocol data recording 25,938 SMB2, 5,760 LDAP, and 2,880 Kerberos (`krb5`) connections across the network. These protocols function together as the foundational stack for central domain authentication and directory management services.
+
+2. **Industrial Control & Building Automation Infrastructure** — **Likely** present.
+   *Summary*: This inference is made from observed traffic counts for OPC UA (28,800), S7comm (11,520), Modbus/TCP (5,762), COTP (5,760), DNP 3.0 (5,760), and BACnet-APDU (5,752). This combination of operational protocols indicates active programmable controllers, SCADA telemetry, and automated building management systems.
+
+3. **Core Network Support Infrastructure** — **Likely** present.
+   *Summary*: This inference relies on traffic logs containing 8,642 UDP DNS connections, 170 UDP NTP connections, and 2 UDP DHCP connections. These standard support protocols demonstrate active domain name resolution, clock synchronization, and dynamic IP allocation infrastructure.
+
+---
+
+### Anomalies
+- **Legacy & Weak Protocols:** Presence of outdated TLS v1 (8,297 connections) alongside TLS v1.3 (306,188 connections), as well as unencrypted FTP traffic (18 connections).
+- **Unidentified / Non-Standard UDP Traffic:** Small volumes of unusual or legacy peer-to-peer UDP traffic, specifically Manolito (2 connections), Ath (2 connections), 0x0000 (2 connections), and unknown UDP protocols (2 connections).
+
+---
+
+### Suspicious Connections
+No suspicious connections found

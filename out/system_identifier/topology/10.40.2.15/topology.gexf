@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2026-08-17">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <attributes mode="static" class="edge">
+      <attribute id="0" title="proto" type="string" />
+      <attribute id="1" title="service" type="string" />
+      <attribute id="2" title="networkx_key" type="long" />
+    </attributes>
+    <nodes>
+      <node id="10.40.2.15" label="10.40.2.15" />
+      <node id="10.40.1.10" label="10.40.1.10" />
+    </nodes>
+    <edges>
+      <edge source="10.40.2.15" target="10.40.1.10" id="0" weight="2876">
+        <attvalues>
+          <attvalue for="0" value="udp" />
+          <attvalue for="1" value="bacnet-apdu" />
+          <attvalue for="2" value="0" />
+        </attvalues>
+      </edge>
+      <edge source="10.40.2.15" target="10.40.1.10" id="1" weight="1">
+        <attvalues>
+          <attvalue for="0" value="udp" />
+          <attvalue for="1" value="ath" />
+          <attvalue for="2" value="1" />
+        </attvalues>
+      </edge>
+      <edge source="10.40.2.15" target="10.40.1.10" id="2" weight="1">
+        <attvalues>
+          <attvalue for="0" value="udp" />
+          <attvalue for="1" value="0x0000" />
+          <attvalue for="2" value="2" />
+        </attvalues>
+      </edge>
+      <edge source="10.40.2.15" target="10.40.1.10" id="3" weight="1">
+        <attvalues>
+          <attvalue for="0" value="udp" />
+          <attvalue for="1" value="manolito" />
+          <attvalue for="2" value="3" />
+        </attvalues>
+      </edge>
+      <edge source="10.40.2.15" target="10.40.1.10" id="4" weight="1">
+        <attvalues>
+          <attvalue for="0" value="udp" />
+          <attvalue for="1" value="unknown" />
+          <attvalue for="2" value="4" />
+        </attvalues>
+      </edge>
+    </edges>
+  </graph>
+</gexf>

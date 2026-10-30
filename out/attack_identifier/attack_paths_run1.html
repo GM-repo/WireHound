@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northwind Manufacturing - corporate and plant network &middot; netmap</title>
+<style>
+/* ---- palette -------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+  --surface-1: #1a1a19;      /* chart surface  */
+  --plane:     #0d0d0d;      /* page plane     */
+  --panel:     #151514;
+  --raised:    #212120;
+  --text-1:    #ffffff;
+  --text-2:    #c3c2b7;
+  --muted:     #898781;
+  --grid:      #2c2c2a;
+  --axis:      #383835;
+  --border:    rgba(255,255,255,0.10);
+  --border-2:  rgba(255,255,255,0.18);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+  --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --other:#6f6d66;
+  --seq-1:#86b6ef; --seq-2:#5598e7; --seq-3:#2a78d6; --seq-4:#184f95;
+  --st-good:#0ca30c; --st-warning:#fab219; --st-serious:#ec835a; --st-critical:#d03b3b;
+  --shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --surface-1:#fcfcfb; --plane:#f2f2ee; --panel:#ffffff; --raised:#f7f7f4;
+  --text-1:#0b0b0b; --text-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7;
+  --border:rgba(11,11,11,0.10); --border-2:rgba(11,11,11,0.20);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --other:#8b8981;
+  --seq-1:#86b6ef; --seq-2:#3987e5; --seq-3:#256abf; --seq-4:#104281;
+  --shadow: 0 8px 28px rgba(11,11,11,.14);
+}
+
+/* ---- base ----------------------------------------------------------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--plane); color: var(--text-1);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden; -webkit-font-smoothing: antialiased;
+}
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+:focus-visible { outline: 2px solid var(--s1); outline-offset: 1px; border-radius: 3px; }
+
+.app { display: grid; height: 100%;
+  grid-template-columns: 292px minmax(0,1fr) 316px;
+  grid-template-rows: 46px minmax(0,1fr) auto;
+  grid-template-areas: "top top top" "left main right" "time time time"; }
+.app.no-right { grid-template-columns: 292px minmax(0,1fr) 0; }
+
+/* ---- top bar -------------------------------------------------------- */
+.topbar { grid-area: top; display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.brand b { font-size: 13px; font-weight: 650; letter-spacing: .01em; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
+.brand span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.spacer { flex: 1 1 auto; }
+.search { position: relative; }
+.search input { width: 252px; padding: 5px 26px 5px 26px; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; }
+.search input::placeholder { color: var(--muted); }
+.search .mag { position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-size: 12px; pointer-events: none; }
+.search .count { position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ctl { display: flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 6px;
+  background: var(--surface-1); border: 1px solid var(--border); color: var(--text-2);
+  font-size: 12px; white-space: nowrap; }
+.ctl:hover { border-color: var(--border-2); color: var(--text-1); }
+.ctl.on { background: var(--s1); border-color: var(--s1); color: #fff; }
+select.ctl { padding-right: 6px; }
+
+/* ---- panels --------------------------------------------------------- */
+.panel { background: var(--panel); overflow-y: auto; overflow-x: hidden; }
+.left  { grid-area: left;  border-right: 1px solid var(--border); }
+.right { grid-area: right; border-left: 1px solid var(--border); }
+.app.no-right .right { display: none; }
+.sec { border-bottom: 1px solid var(--border); padding: 11px 12px 13px; }
+.sec > h2 { margin: 0 0 9px; font-size: 10.5px; font-weight: 650; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.sec > h2 .hint { font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted);
+  opacity: .8; margin-left: auto; font-size: 10px; }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 7px;
+  padding: 8px 9px 9px; }
+.tile .k { font-size: 10px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.tile .v { font-size: 21px; font-weight: 620; line-height: 1.15; margin-top: 2px; }
+.tile .sub { font-size: 10.5px; color: var(--text-2); margin-top: 1px; }
+.tile.alert .v { color: var(--st-critical); }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 6px;
+  border-radius: 20px; border: 1px solid var(--border); background: var(--surface-1);
+  font-size: 11.5px; color: var(--text-2); cursor: pointer; user-select: none;
+  min-height: 24px; }
+.chip:hover { border-color: var(--border-2); }
+.chip.off { opacity: .38; }
+.chip .sw { width: 9px; height: 9px; border-radius: 2px; flex: none;
+  box-shadow: 0 0 0 2px var(--surface-1); }
+.chip .sw.round { border-radius: 50%; }
+.chip .n { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chip .gl { font-size: 10px; width: 11px; text-align: center; }
+.row-btns { display: flex; gap: 6px; margin-top: 8px; }
+.mini { font-size: 10.5px; padding: 3px 8px; border-radius: 5px; background: transparent;
+  border: 1px solid var(--border); color: var(--muted); }
+.mini:hover { color: var(--text-1); border-color: var(--border-2); }
+
+/* toggles */
+.toggle { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;
+  font-size: 12px; color: var(--text-2); }
+.toggle input { accent-color: var(--s1); width: 14px; height: 14px; margin: 0; }
+.toggle:hover { color: var(--text-1); }
+
+/* attack path cards */
+.pathlist { display: flex; flex-direction: column; gap: 7px; }
+.pcard { border: 1px solid var(--border); border-left: 3px solid var(--pc, var(--s1));
+  border-radius: 7px; background: var(--surface-1); padding: 8px 9px; cursor: pointer; }
+.pcard:hover { border-color: var(--border-2); border-left-color: var(--pc, var(--s1)); }
+.pcard.sel { background: var(--raised); border-color: var(--border-2);
+  box-shadow: inset 0 0 0 1px var(--border); }
+.pcard .ptop { display: flex; align-items: center; gap: 6px; }
+.pcard .pname { font-size: 12.5px; font-weight: 580; line-height: 1.3; }
+.pcard .pmeta { font-size: 10.5px; color: var(--muted); margin-top: 3px;
+  display: flex; flex-wrap: wrap; gap: 4px 9px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 1px 5px;
+  border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em;
+  border: 1px solid; white-space: nowrap; }
+.badge .gl { font-size: 9px; }
+.badge.critical { color: var(--st-critical); border-color: var(--st-critical); }
+.badge.serious  { color: var(--st-serious);  border-color: var(--st-serious); }
+.badge.warning  { color: var(--st-warning);  border-color: var(--st-warning); }
+.badge.good     { color: var(--st-good);     border-color: var(--st-good); }
+.badge.clean    { color: var(--muted);       border-color: var(--border-2); }
+.badge.solid { color: #14140f; }
+.badge.solid.critical { background: var(--st-critical); color: #fff; }
+.badge.solid.serious  { background: var(--st-serious); }
+.badge.solid.warning  { background: var(--st-warning); }
+.badge.solid.good     { background: var(--st-good); color: #fff; }
+
+/* hop stepper */
+.steps { margin-top: 9px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.stepper { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+.stepper .pos { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hop { display: grid; grid-template-columns: 20px minmax(0,1fr); gap: 7px; padding: 5px 4px;
+  border-radius: 5px; cursor: pointer; align-items: start; }
+.hop:hover { background: var(--raised); }
+.hop.cur { background: var(--raised); box-shadow: inset 2px 0 0 var(--pc, var(--s1)); }
+.hop .num { width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 650; background: var(--pc, var(--s1)); color: #fff;
+  font-variant-numeric: tabular-nums; }
+.hop.cur .num { box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--pc, var(--s1)); }
+.hop .ht { font-size: 11.5px; line-height: 1.35; }
+.hop .hs { font-size: 10.5px; color: var(--muted); margin-top: 2px; word-break: break-word; }
+.hop .tt { font-size: 9.5px; color: var(--muted); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 4px; margin-left: 5px; white-space: nowrap; }
+
+/* ---- graph ---------------------------------------------------------- */
+.main { grid-area: main; position: relative; background: var(--surface-1); overflow: hidden; }
+#graph { display: block; width: 100%; height: 100%; }
+.overlay { position: absolute; pointer-events: none; }
+.legend { left: 12px; bottom: 12px; background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; max-width: 250px;
+  pointer-events: auto; backdrop-filter: blur(6px); }
+.legend h3 { margin: 0 0 6px; font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); font-weight: 650; }
+.legend .li { display: flex; align-items: center; gap: 7px; font-size: 11px; padding: 1.5px 0;
+  color: var(--text-2); }
+.legend .li .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.legend .li .sw.round { border-radius: 50%; }
+.legend .grp { margin-top: 8px; }
+.legend .sizes { display: flex; align-items: flex-end; gap: 8px; padding-top: 3px; }
+.legend .sizes i { display: block; border-radius: 50%; background: var(--muted); }
+.zoombar { right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 5px;
+  pointer-events: auto; }
+.zoombar button { width: 30px; height: 30px; border-radius: 7px; background: var(--panel);
+  border: 1px solid var(--border); color: var(--text-2); font-size: 14px; display: grid;
+  place-items: center; }
+.zoombar button:hover { color: var(--text-1); border-color: var(--border-2); }
+.hud { left: 12px; top: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  max-width: calc(100% - 24px); pointer-events: auto; }
+.pill { background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 6px; backdrop-filter: blur(6px); }
+.pill button { background: none; border: 0; color: var(--muted); padding: 0 0 0 2px; font-size: 12px; }
+.pill button:hover { color: var(--text-1); }
+#tooltip { position: fixed; z-index: 60; pointer-events: none; max-width: 300px;
+  background: var(--panel); border: 1px solid var(--border-2); border-radius: 8px;
+  padding: 8px 10px; box-shadow: var(--shadow); font-size: 11.5px; display: none; }
+#tooltip .tt-h { font-weight: 620; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+#tooltip .tt-r { color: var(--text-2); margin-top: 3px; display: flex; gap: 8px; }
+#tooltip .tt-r b { font-weight: 500; color: var(--muted); min-width: 62px; }
+.empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+  font-size: 13px; text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+<style>
+/* ---- inspector ------------------------------------------------------ */
+.insp-head { padding: 12px; border-bottom: 1px solid var(--border); }
+.insp-head .ih { display: flex; align-items: flex-start; gap: 8px; }
+.insp-head h1 { margin: 0; font-size: 15px; font-weight: 630; line-height: 1.25; word-break: break-word; }
+.insp-head .sub { font-size: 11px; color: var(--muted); margin-top: 3px;
+  font-variant-numeric: tabular-nums; }
+.insp-head .close { margin-left: auto; background: none; border: 0; color: var(--muted);
+  font-size: 16px; line-height: 1; padding: 2px 4px; }
+.insp-head .close:hover { color: var(--text-1); }
+.kv { display: grid; grid-template-columns: 88px minmax(0,1fr); gap: 3px 10px; font-size: 11.5px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; color: var(--text-2); word-break: break-word; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.tbl th { text-align: left; font-weight: 600; color: var(--muted); font-size: 9.5px;
+  letter-spacing: .07em; text-transform: uppercase; padding: 0 8px 4px 0;
+  border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tbl td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--grid); color: var(--text-2);
+  vertical-align: top; }
+.tbl td.num, .tbl th.num { font-variant-numeric: tabular-nums; text-align: right;
+  padding-right: 0; }
+.tbl tr:last-child td { border-bottom: 0; }
+.linklist { display: flex; flex-wrap: wrap; gap: 4px; }
+.nlink { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-2); cursor: pointer; }
+.nlink:hover { border-color: var(--border-2); color: var(--text-1); }
+.nlink .sw { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 5px; vertical-align: 1px; }
+.evrow { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 8px; padding: 5px 0;
+  border-bottom: 1px solid var(--grid); font-size: 11px; cursor: pointer; }
+.evrow:last-child { border-bottom: 0; }
+.evrow:hover { background: var(--raised); }
+.evrow .t { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 10.5px; }
+.evrow .d { color: var(--text-2); }
+.evrow .m { color: var(--muted); font-size: 10px; margin-top: 1px; }
+.slider { width: 100%; accent-color: var(--s1); }
+
+/* ---- timeline ------------------------------------------------------- */
+.timewrap { grid-area: time; background: var(--panel); border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; }
+.timewrap.collapsed .tl-body { display: none; }
+.tl-head { display: flex; align-items: center; gap: 9px; padding: 7px 12px;
+  border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.tl-head h2 { margin: 0; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); font-weight: 650; }
+.tl-head .clock { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-1);
+  padding: 2px 8px; border-radius: 5px; background: var(--surface-1);
+  border: 1px solid var(--border); }
+.tl-body { position: relative; }
+#timeline { display: block; width: 100%; }
+.tl-legend { display: flex; gap: 12px; align-items: center; font-size: 10.5px; color: var(--text-2);
+  padding: 0 12px 7px; flex-wrap: wrap; }
+.tl-legend .li { display: inline-flex; align-items: center; gap: 5px; }
+.tl-legend .li i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.tl-empty { padding: 18px 12px 22px; color: var(--muted); font-size: 12px; }
+
+/* ---- table view / modal --------------------------------------------- */
+.sheet { position: fixed; inset: 0; z-index: 80; background: color-mix(in srgb, var(--plane) 72%, transparent);
+  display: none; padding: 34px 34px 26px; backdrop-filter: blur(3px); }
+.sheet.open { display: block; }
+.sheet-inner { height: 100%; background: var(--panel); border: 1px solid var(--border-2);
+  border-radius: 11px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  overflow: hidden; }
+.sheet-head { display: flex; align-items: center; gap: 8px; padding: 10px 13px;
+  border-bottom: 1px solid var(--border); }
+.tabs { display: flex; gap: 4px; }
+.tab { padding: 4px 11px; border-radius: 6px; border: 1px solid transparent; background: none;
+  color: var(--muted); font-size: 12px; }
+.tab.on { background: var(--surface-1); border-color: var(--border); color: var(--text-1); }
+.sheet-body { flex: 1; overflow: auto; padding: 0 13px 13px; }
+.sheet-body .tbl { font-size: 11.5px; }
+.sheet-body .tbl th { position: sticky; top: 0; background: var(--panel); z-index: 2;
+  padding: 8px 10px 6px 0; cursor: pointer; }
+.sheet-body .tbl th:hover { color: var(--text-1); }
+.sheet-body .tbl td { padding: 5px 10px 5px 0; }
+.sheet-body .tbl tbody tr:hover { background: var(--raised); }
+
+/* ---- toast / help ---------------------------------------------------- */
+.toasts { position: fixed; right: 14px; bottom: 14px; z-index: 90; display: flex;
+  flex-direction: column; gap: 7px; align-items: flex-end; }
+.toast { background: var(--panel); border: 1px solid var(--border-2); border-left: 3px solid var(--s1);
+  border-radius: 7px; padding: 8px 12px; font-size: 12px; box-shadow: var(--shadow);
+  max-width: 360px; animation: slide .18s ease-out; }
+.toast.err { border-left-color: var(--st-critical); }
+.toast.warn { border-left-color: var(--st-warning); }
+@keyframes slide { from { opacity: 0; transform: translateY(6px); } }
+kbd { font: 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 2px 5px;
+  border: 1px solid var(--border-2); border-bottom-width: 2px; border-radius: 4px;
+  background: var(--surface-1); color: var(--text-2); }
+.help-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center;
+  font-size: 12px; color: var(--text-2); }
+.warnbox { font-size: 11px; color: var(--text-2); background: var(--surface-1);
+  border: 1px solid var(--border); border-left: 3px solid var(--st-warning);
+  border-radius: 6px; padding: 7px 9px; margin-top: 8px; }
+.warnbox ul { margin: 4px 0 0; padding-left: 15px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand"><b id="doc-title">Northwind Manufacturing - corporate and plant network</b><span id="doc-sub"></span></div>
+    <div class="spacer"></div>
+    <div class="search">
+      <span class="mag">&#9906;</span>
+      <input id="q" type="search" placeholder="Search host, IP, OS, service, CVE, tag&hellip;"
+             autocomplete="off" spellcheck="false" aria-label="Search assets">
+      <span class="count" id="q-count"></span>
+    </div>
+    <select class="ctl" id="layout" aria-label="Graph layout" title="Layout (L)">
+      <option value="zones">Zone columns</option>
+      <option value="force">Force directed</option>
+      <option value="radial">Radial by zone</option>
+      <option value="file">Saved coordinates</option>
+    </select>
+    <select class="ctl" id="colorby" aria-label="Colour nodes by" title="Colour nodes by">
+      <option value="zone">Colour: zone</option>
+      <option value="state">Colour: compromise state</option>
+      <option value="crit">Colour: criticality</option>
+      <option value="risk">Colour: max CVSS</option>
+    </select>
+    <button class="ctl" id="btn-table" title="Table view (T)">&#9636; Tables</button>
+    <button class="ctl" id="btn-theme" title="Light / dark (D)">&#9681;</button>
+    <button class="ctl" id="btn-help" title="Keyboard shortcuts (?)">?</button>
+  </header>
+
+  <aside class="panel left">
+    <div class="sec">
+      <h2>Posture</h2>
+      <div class="tiles" id="tiles"></div>
+      <div id="warnings"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Attack paths <span class="hint" id="path-hint"></span></h2>
+      <div class="pathlist" id="paths"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Zones</h2>
+      <div class="chips" id="zone-chips"></div>
+      <div class="row-btns">
+        <button class="mini" data-all="zone">All</button>
+        <button class="mini" data-none="zone">None</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Compromise state</h2>
+      <div class="chips" id="state-chips"></div>
+      <h2 style="margin-top:12px">Asset criticality</h2>
+      <div class="chips" id="crit-chips"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Focus</h2>
+      <label class="toggle"><input type="checkbox" id="f-paths"> Only nodes on attack paths</label>
+      <label class="toggle"><input type="checkbox" id="f-cve"> Only nodes with findings</label>
+      <label class="toggle"><input type="checkbox" id="f-kev"> Only known-exploited findings</label>
+      <label class="toggle"><input type="checkbox" id="f-window"> Only nodes active in the time window</label>
+      <label class="toggle"><input type="checkbox" id="f-hide"> Hide filtered nodes (else dim)</label>
+      <label class="toggle"><input type="checkbox" id="f-labels" checked> Show node labels</label>
+      <label class="toggle"><input type="checkbox" id="f-edgelabels"> Show link labels</label>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <canvas id="graph" role="img" aria-label="Network topology graph"></canvas>
+    <div class="overlay hud" id="hud"></div>
+    <div class="overlay legend" id="legend"></div>
+    <div class="overlay zoombar">
+      <button id="z-in"  title="Zoom in">+</button>
+      <button id="z-out" title="Zoom out">&minus;</button>
+      <button id="z-fit" title="Fit to view (F)">&#9974;</button>
+    </div>
+    <div class="empty" id="graph-empty" style="display:none"></div>
+  </main>
+
+  <aside class="panel right" id="right"></aside>
+
+  <section class="timewrap" id="timewrap">
+    <div class="tl-head">
+      <h2>Timeline</h2>
+      <button class="ctl" id="tl-play" title="Play / pause replay (Space)">&#9654; Replay</button>
+      <button class="ctl" id="tl-prev" title="Previous event (&larr;)">&#9664;&#9664;</button>
+      <button class="ctl" id="tl-next" title="Next event (&rarr;)">&#9654;&#9654;</button>
+      <select class="ctl" id="tl-speed" aria-label="Replay speed">
+        <option value="0.5">0.5&times;</option><option value="1" selected>1&times;</option>
+        <option value="2">2&times;</option><option value="4">4&times;</option>
+        <option value="8">8&times;</option>
+      </select>
+      <span class="clock" id="tl-clock">&mdash;</span>
+      <span class="pill" id="tl-window" style="display:none"></span>
+      <div class="spacer"></div>
+      <span class="tl-legend" id="tl-legend"></span>
+      <button class="ctl" id="tl-toggle" title="Collapse / expand timeline">&#9662;</button>
+    </div>
+    <div class="tl-body" id="tl-body">
+      <canvas id="timeline" role="img" aria-label="Attack timeline"></canvas>
+      <div class="tl-empty" id="tl-empty" style="display:none">
+        No timestamped events. Supply <code>--timeline events.json</code>, or add
+        <code>ts</code> fields to your attack-path steps.
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tooltip" role="tooltip"></div>
+<div class="toasts" id="toasts"></div>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div class="tabs" id="sheet-tabs"></div>
+      <div class="spacer"></div>
+      <button class="ctl" id="sheet-csv">Download CSV</button>
+      <button class="ctl" id="sheet-close">Close &#10005;</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<script id="netmap-data" type="application/json">{"version":1,"generated":"2026-08-18T23:10:31+00:00","generator":"netmap 1.0.0","title":"Northwind Manufacturing - corporate and plant network","directed":false,"nodes":[{"id":"actor-infra","label":"adversary-c2","zone":"Internet","kind":"c2","ip":"198.51.100.77","mac":"","os":"Linux","owner":"IT Operations","notes":"Known TA infrastructure","state":"critical","stateRaw":"compromised","crit":1,"critRaw":"1","exposed":false,"services":[{"port":443,"proto":"tcp","name":"https","version":""},{"port":8443,"proto":"tcp","name":"https","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":["ap-ransomware","ap-webexfil"],"eventCount":1,"choke":0.0},{"id":"internet","label":"Public Internet","zone":"Internet","kind":"cloud","ip":"0.0.0.0/0","mac":"","os":"","owner":"IT Operations","notes":"Untrusted network","state":"clean","stateRaw":"clean","crit":1,"critRaw":"1","exposed":false,"services":[],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":3,"paths":[],"eventCount":0,"choke":0.06855},{"id":"edge-fw","label":"edge-fw-01","zone":"Perimeter","kind":"firewall","ip":"203.0.113.2","mac":"","os":"PAN-OS 10.2","owner":"IT Operations","notes":"Internet border firewall","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"mgmt","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":4,"paths":[],"eventCount":1,"choke":0.13544},{"id":"vpn-gw","label":"vpn-gw-01","zone":"Perimeter","kind":"vpn","ip":"203.0.113.5","mac":"","os":"Ivanti 22.3","owner":"IT Operations","notes":"No MFA on legacy group","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"sslvpn","version":""}],"cves":[{"id":"CVE-2024-21887","cvss":9.1,"severity":"critical","detail":"","exploited":true}],"tags":[],"attrs":{},"maxCvss":9.1,"kev":true,"degree":3,"paths":["ap-ransomware"],"eventCount":3,"choke":0.06164},{"id":"waf","label":"waf-01","zone":"Perimeter","kind":"proxy","ip":"203.0.113.7","mac":"","os":"NGINX 1.24","owner":"IT Operations","notes":"","state":"clean","stateRaw":"clean","crit":3,"critRaw":"3","exposed":false,"services":[{"port":443,"proto":"tcp","name":"https","version":""},{"port":80,"proto":"tcp","name":"http","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":3,"paths":[],"eventCount":0,"choke":0.04083},{"id":"www01","label":"www-prod-01","zone":"DMZ","kind":"webserver","ip":"10.10.20.11","mac":"","os":"Ubuntu 22.04","owner":"IT Operations","notes":"Public storefront","state":"critical","stateRaw":"compromised","crit":3,"critRaw":"3","exposed":false,"services":[{"port":443,"proto":"tcp","name":"nginx","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[{"id":"CVE-2023-4966","cvss":9.4,"severity":"critical","detail":"","exploited":true},{"id":"CVE-2023-38545","cvss":8.1,"severity":"serious","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":9.4,"kev":true,"degree":2,"paths":["ap-webexfil"],"eventCount":4,"choke":0.02352},{"id":"www02","label":"www-prod-02","zone":"DMZ","kind":"webserver","ip":"10.10.20.12","mac":"","os":"Ubuntu 22.04","owner":"IT Operations","notes":"","state":"warning","stateRaw":"vulnerable","crit":3,"critRaw":"3","exposed":false,"services":[{"port":443,"proto":"tcp","name":"nginx","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[{"id":"CVE-2023-4966","cvss":9.4,"severity":"critical","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":9.4,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.03679},{"id":"mail-relay","label":"mx-relay-01","zone":"DMZ","kind":"mail","ip":"10.10.20.25","mac":"","os":"Postfix 3.7","owner":"IT Operations","notes":"","state":"clean","stateRaw":"clean","crit":3,"critRaw":"3","exposed":false,"services":[{"port":25,"proto":"tcp","name":"smtp","version":""},{"port":587,"proto":"tcp","name":"submission","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":[],"eventCount":0,"choke":0.0},{"id":"dmz-jump","label":"jump-dmz-01","zone":"DMZ","kind":"jumpbox","ip":"10.10.20.40","mac":"","os":"Windows 2019","owner":"IT Operations","notes":"Shared local admin password","state":"serious","stateRaw":"suspected","crit":4,"critRaw":"4","exposed":false,"services":[{"port":3389,"proto":"tcp","name":"rdp","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[{"id":"CVE-2019-0708","cvss":9.8,"severity":"critical","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":9.8,"kev":false,"degree":4,"paths":["ap-ransomware"],"eventCount":3,"choke":0.21302},{"id":"app01","label":"app-prod-01","zone":"App Servers","kind":"appserver","ip":"10.10.40.11","mac":"","os":"RHEL 9","owner":"IT Operations","notes":"Log4j not patched","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":8080,"proto":"tcp","name":"tomcat","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[{"id":"CVE-2021-44228","cvss":10.0,"severity":"critical","detail":"","exploited":true}],"tags":[],"attrs":{},"maxCvss":10.0,"kev":true,"degree":6,"paths":["ap-webexfil"],"eventCount":3,"choke":0.26216},{"id":"app02","label":"app-prod-02","zone":"App Servers","kind":"appserver","ip":"10.10.40.12","mac":"","os":"RHEL 9","owner":"IT Operations","notes":"","state":"warning","stateRaw":"vulnerable","crit":4,"critRaw":"4","exposed":false,"services":[{"port":8080,"proto":"tcp","name":"tomcat","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[{"id":"CVE-2021-44228","cvss":10.0,"severity":"critical","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":10.0,"kev":false,"degree":4,"paths":[],"eventCount":0,"choke":0.13546},{"id":"jenkins01","label":"ci-jenkins-01","zone":"App Servers","kind":"ci","ip":"10.10.40.30","mac":"","os":"Ubuntu 22.04","owner":"IT Operations","notes":"Build agents run as root","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":8080,"proto":"tcp","name":"jenkins","version":""},{"port":50000,"proto":"tcp","name":"jnlp","version":""}],"cves":[{"id":"CVE-2024-23897","cvss":9.8,"severity":"critical","detail":"","exploited":true}],"tags":[],"attrs":{},"maxCvss":9.8,"kev":true,"degree":5,"paths":["ap-ot"],"eventCount":3,"choke":0.21121},{"id":"gitlab01","label":"scm-gitlab-01","zone":"App Servers","kind":"scm","ip":"10.10.40.31","mac":"","os":"Ubuntu 22.04","owner":"IT Operations","notes":"Holds deployment secrets","state":"serious","stateRaw":"suspected","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"https","version":""},{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.01449},{"id":"fileshare","label":"fs-corp-01","zone":"App Servers","kind":"fileserver","ip":"10.10.40.50","mac":"","os":"Windows 2019","owner":"IT Operations","notes":"SMB signing disabled","state":"warning","stateRaw":"vulnerable","crit":3,"critRaw":"3","exposed":false,"services":[{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[{"id":"CVE-2020-1472","cvss":10.0,"severity":"critical","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":10.0,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.0},{"id":"dc01","label":"dc-hq-01","zone":"Identity","kind":"domaincontroller","ip":"10.10.50.10","mac":"","os":"Windows 2019","owner":"Directory Services","notes":"Forest root","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":389,"proto":"tcp","name":"ldap","version":""},{"port":445,"proto":"tcp","name":"smb","version":""},{"port":88,"proto":"tcp","name":"kerberos","version":""}],"cves":[{"id":"CVE-2020-1472","cvss":10.0,"severity":"critical","detail":"","exploited":true}],"tags":[],"attrs":{},"maxCvss":10.0,"kev":true,"degree":13,"paths":["ap-ransomware"],"eventCount":3,"choke":0.45549},{"id":"dc02","label":"dc-hq-02","zone":"Identity","kind":"domaincontroller","ip":"10.10.50.11","mac":"","os":"Windows 2019","owner":"Directory Services","notes":"","state":"serious","stateRaw":"suspected","crit":4,"critRaw":"4","exposed":false,"services":[{"port":389,"proto":"tcp","name":"ldap","version":""},{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":[],"eventCount":1,"choke":0.0},{"id":"adfs01","label":"adfs-01","zone":"Identity","kind":"sso","ip":"10.10.50.20","mac":"","os":"Windows 2019","owner":"Directory Services","notes":"Token signing cert due for rotation","state":"warning","stateRaw":"vulnerable","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"https","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":[],"eventCount":1,"choke":0.0},{"id":"pki01","label":"pki-ca-01","zone":"Identity","kind":"pki","ip":"10.10.50.30","mac":"","os":"Windows 2022","owner":"Directory Services","notes":"Enterprise CA","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"certsrv","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":[],"eventCount":0,"choke":0.0},{"id":"wks-fin-003","label":"wks-fin-003","zone":"Corp Workstations","kind":"workstation","ip":"10.10.30.53","mac":"","os":"Windows 11","owner":"IT Operations","notes":"Finance analyst","state":"critical","stateRaw":"compromised","crit":2,"critRaw":"2","exposed":false,"services":[{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":1,"choke":0.0},{"id":"wks-hr-014","label":"wks-hr-014","zone":"Corp Workstations","kind":"workstation","ip":"10.10.30.64","mac":"","os":"Windows 11","owner":"IT Operations","notes":"Opened phishing attachment","state":"serious","stateRaw":"suspected","crit":2,"critRaw":"2","exposed":false,"services":[{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":1,"choke":0.0},{"id":"wks-eng-021","label":"wks-eng-021","zone":"Corp Workstations","kind":"workstation","ip":"10.10.30.71","mac":"","os":"Windows 11","owner":"IT Operations","notes":"","state":"clean","stateRaw":"clean","crit":2,"critRaw":"2","exposed":false,"services":[{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":["ap-ot"],"eventCount":1,"choke":0.02087},{"id":"laptop-exec","label":"lt-exec-002","zone":"Corp Workstations","kind":"laptop","ip":"10.10.30.99","mac":"","os":"macOS 14","owner":"IT Operations","notes":"Travels; roams off-VPN","state":"warning","stateRaw":"vulnerable","crit":3,"critRaw":"3","exposed":false,"services":[],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.02388},{"id":"corp-sw","label":"sw-corp-core","zone":"Corp Workstations","kind":"switch","ip":"10.10.30.1","mac":"","os":"IOS-XE 17.9","owner":"IT Operations","notes":"","state":"clean","stateRaw":"clean","crit":3,"critRaw":"3","exposed":false,"services":[{"port":22,"proto":"tcp","name":"ssh","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":7,"paths":["ap-ransomware"],"eventCount":2,"choke":0.181},{"id":"sql01","label":"sql-prod-01","zone":"Database","kind":"database","ip":"10.10.60.11","mac":"","os":"Windows 2019 / MSSQL","owner":"Data Platform","notes":"Customer PII, 4.2M rows","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":1433,"proto":"tcp","name":"mssql","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":3,"paths":["ap-ransomware","ap-webexfil"],"eventCount":4,"choke":0.00597},{"id":"sql02","label":"sql-prod-02","zone":"Database","kind":"database","ip":"10.10.60.12","mac":"","os":"Windows 2019 / MSSQL","owner":"Data Platform","notes":"Replica","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":1433,"proto":"tcp","name":"mssql","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":1,"paths":[],"eventCount":0,"choke":0.0},{"id":"erp-db","label":"oracle-erp-01","zone":"Database","kind":"database","ip":"10.10.60.20","mac":"","os":"Oracle Linux 8","owner":"Data Platform","notes":"Financial ledger","state":"warning","stateRaw":"vulnerable","crit":4,"critRaw":"4","exposed":false,"services":[{"port":1521,"proto":"tcp","name":"oracle","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":1,"choke":0.00597},{"id":"backup01","label":"veeam-backup-01","zone":"Database","kind":"backup","ip":"10.10.60.40","mac":"","os":"Windows 2019","owner":"Data Platform","notes":"Backup repository - encrypted by actor","state":"critical","stateRaw":"compromised","crit":4,"critRaw":"4","exposed":false,"services":[{"port":9392,"proto":"tcp","name":"veeam","version":""},{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[{"id":"CVE-2023-27532","cvss":7.5,"severity":"serious","detail":"","exploited":true}],"tags":[],"attrs":{},"maxCvss":7.5,"kev":true,"degree":3,"paths":["ap-ransomware"],"eventCount":3,"choke":0.01384},{"id":"ot-fw","label":"ot-fw-01","zone":"OT / ICS","kind":"firewall","ip":"10.10.70.1","mac":"","os":"PAN-OS 10.1","owner":"Plant Engineering","notes":"IT/OT boundary, Purdue L3.5","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":443,"proto":"tcp","name":"mgmt","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.08597},{"id":"hist01","label":"historian-01","zone":"OT / ICS","kind":"historian","ip":"10.10.70.20","mac":"","os":"Windows 2016","owner":"Plant Engineering","notes":"Process historian, dual-homed","state":"serious","stateRaw":"suspected","crit":4,"critRaw":"4","exposed":false,"services":[{"port":1433,"proto":"tcp","name":"mssql","version":""},{"port":445,"proto":"tcp","name":"smb","version":""}],"cves":[{"id":"CVE-2021-34527","cvss":8.8,"severity":"serious","detail":"","exploited":false}],"tags":[],"attrs":{},"maxCvss":8.8,"kev":false,"degree":3,"paths":[],"eventCount":1,"choke":0.06377},{"id":"hmi01","label":"hmi-line1-01","zone":"OT / ICS","kind":"hmi","ip":"10.10.70.31","mac":"","os":"Windows 10 LTSC","owner":"Plant Engineering","notes":"Line 1 operator station","state":"warning","stateRaw":"vulnerable","crit":4,"critRaw":"4","exposed":false,"services":[{"port":5900,"proto":"tcp","name":"vnc","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":3,"paths":[],"eventCount":1,"choke":0.01086},{"id":"eng-ot","label":"eng-wks-ot-01","zone":"OT / ICS","kind":"workstation","ip":"10.10.70.35","mac":"","os":"Windows 10 LTSC","owner":"Plant Engineering","notes":"Engineering workstation","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":3389,"proto":"tcp","name":"rdp","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":4,"paths":["ap-ot"],"eventCount":2,"choke":0.14669},{"id":"plc-line1","label":"plc-line-1","zone":"OT / ICS","kind":"plc","ip":"10.10.70.101","mac":"","os":"Siemens S7-1500","owner":"Plant Engineering","notes":"Assembly line 1","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":102,"proto":"tcp","name":"s7comm","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":["ap-ot"],"eventCount":1,"choke":0.00823},{"id":"plc-line2","label":"plc-line-2","zone":"OT / ICS","kind":"plc","ip":"10.10.70.102","mac":"","os":"Siemens S7-1500","owner":"Plant Engineering","notes":"Assembly line 2","state":"clean","stateRaw":"clean","crit":4,"critRaw":"4","exposed":false,"services":[{"port":102,"proto":"tcp","name":"s7comm","version":""}],"cves":[],"tags":[],"attrs":{},"maxCvss":0.0,"kev":false,"degree":2,"paths":[],"eventCount":0,"choke":0.00823}],"links":[{"source":"actor-infra","target":"internet","kind":"wan","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Actor egress","directed":false,"attrs":{}},{"source":"internet","target":"edge-fw","kind":"wan","protocol":"ip","port":0,"label":"ip/0","weight":1.0,"bandwidth":"","trust":"","notes":"Ingress","directed":false,"attrs":{}},{"source":"internet","target":"vpn-gw","kind":"wan","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"SSL VPN portal","directed":false,"attrs":{}},{"source":"edge-fw","target":"waf","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"edge-fw","target":"mail-relay","kind":"routed","protocol":"smtp","port":25,"label":"smtp/25","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"edge-fw","target":"dmz-jump","kind":"routed","protocol":"ssh","port":22,"label":"ssh/22","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"vpn-gw","target":"dmz-jump","kind":"routed","protocol":"rdp","port":3389,"label":"rdp/3389","weight":1.0,"bandwidth":"","trust":"","notes":"VPN users land here","directed":false,"attrs":{}},{"source":"vpn-gw","target":"laptop-exec","kind":"vpn","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Remote access","directed":false,"attrs":{}},{"source":"waf","target":"www01","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Load balanced","directed":false,"attrs":{}},{"source":"waf","target":"www02","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Load balanced","directed":false,"attrs":{}},{"source":"www01","target":"app01","kind":"routed","protocol":"http","port":8080,"label":"http/8080","weight":1.0,"bandwidth":"","trust":"","notes":"App tier call","directed":false,"attrs":{}},{"source":"www02","target":"app02","kind":"routed","protocol":"http","port":8080,"label":"http/8080","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dmz-jump","target":"app01","kind":"routed","protocol":"ssh","port":22,"label":"ssh/22","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dmz-jump","target":"corp-sw","kind":"routed","protocol":"smb","port":445,"label":"smb/445","weight":1.0,"bandwidth":"","trust":"","notes":"Over-permissive rule","directed":false,"attrs":{}},{"source":"app01","target":"sql01","kind":"routed","protocol":"mssql","port":1433,"label":"mssql/1433","weight":1.0,"bandwidth":"","trust":"","notes":"App service account","directed":false,"attrs":{}},{"source":"app01","target":"dc01","kind":"routed","protocol":"ldap","port":389,"label":"ldap/389","weight":1.0,"bandwidth":"","trust":"","notes":"Domain auth","directed":false,"attrs":{}},{"source":"app01","target":"jenkins01","kind":"routed","protocol":"ssh","port":22,"label":"ssh/22","weight":1.0,"bandwidth":"","trust":"","notes":"Deploy","directed":false,"attrs":{}},{"source":"app01","target":"erp-db","kind":"routed","protocol":"oracle","port":1521,"label":"oracle/1521","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"app02","target":"sql02","kind":"routed","protocol":"mssql","port":1433,"label":"mssql/1433","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"app02","target":"dc01","kind":"routed","protocol":"ldap","port":389,"label":"ldap/389","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"app02","target":"jenkins01","kind":"routed","protocol":"ssh","port":22,"label":"ssh/22","weight":1.0,"bandwidth":"","trust":"","notes":"Deploy","directed":false,"attrs":{}},{"source":"jenkins01","target":"gitlab01","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Pipeline checkout","directed":false,"attrs":{}},{"source":"jenkins01","target":"eng-ot","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Firmware artefact push","directed":false,"attrs":{}},{"source":"jenkins01","target":"wks-eng-021","kind":"routed","protocol":"https","port":443,"label":"https/443","weight":1.0,"bandwidth":"","trust":"","notes":"Developer access","directed":false,"attrs":{}},{"source":"gitlab01","target":"dc01","kind":"routed","protocol":"ldap","port":389,"label":"ldap/389","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"fileshare","target":"dc01","kind":"routed","protocol":"smb","port":445,"label":"smb/445","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"fileshare","target":"corp-sw","kind":"routed","protocol":"smb","port":445,"label":"smb/445","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"corp-sw","kind":"routed","protocol":"kerberos","port":88,"label":"kerberos/88","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"wks-fin-003","kind":"routed","protocol":"kerberos","port":88,"label":"kerberos/88","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"wks-hr-014","kind":"routed","protocol":"kerberos","port":88,"label":"kerberos/88","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"dc02","kind":"routed","protocol":"replication","port":135,"label":"replication/135","weight":1.0,"bandwidth":"","trust":"","notes":"AD replication","directed":false,"attrs":{}},{"source":"dc01","target":"adfs01","kind":"routed","protocol":"ldap","port":389,"label":"ldap/389","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"pki01","kind":"routed","protocol":"rpc","port":135,"label":"rpc/135","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"sql01","kind":"routed","protocol":"kerberos","port":88,"label":"kerberos/88","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"dc01","target":"backup01","kind":"routed","protocol":"smb","port":445,"label":"smb/445","weight":1.0,"bandwidth":"","trust":"","notes":"Backup service account","directed":false,"attrs":{}},{"source":"dc01","target":"ot-fw","kind":"routed","protocol":"ldap","port":389,"label":"ldap/389","weight":1.0,"bandwidth":"","trust":"","notes":"OT domain trust","directed":false,"attrs":{}},{"source":"wks-fin-003","target":"corp-sw","kind":"switched","protocol":"ethernet","port":0,"label":"ethernet/0","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"wks-hr-014","target":"corp-sw","kind":"switched","protocol":"ethernet","port":0,"label":"ethernet/0","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"wks-eng-021","target":"corp-sw","kind":"switched","protocol":"ethernet","port":0,"label":"ethernet/0","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"laptop-exec","target":"corp-sw","kind":"switched","protocol":"ethernet","port":0,"label":"ethernet/0","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"sql01","target":"backup01","kind":"routed","protocol":"veeam","port":9392,"label":"veeam/9392","weight":1.0,"bandwidth":"","trust":"","notes":"Nightly backup","directed":false,"attrs":{}},{"source":"erp-db","target":"backup01","kind":"routed","protocol":"veeam","port":9392,"label":"veeam/9392","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"ot-fw","target":"hist01","kind":"routed","protocol":"mssql","port":1433,"label":"mssql/1433","weight":1.0,"bandwidth":"","trust":"","notes":"Historian replication","directed":false,"attrs":{}},{"source":"hist01","target":"hmi01","kind":"switched","protocol":"opc","port":4840,"label":"opc/4840","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"hist01","target":"eng-ot","kind":"switched","protocol":"smb","port":445,"label":"smb/445","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"hmi01","target":"plc-line1","kind":"switched","protocol":"s7comm","port":102,"label":"s7comm/102","weight":1.0,"bandwidth":"","trust":"","notes":"Supervisory control","directed":false,"attrs":{}},{"source":"hmi01","target":"plc-line2","kind":"switched","protocol":"s7comm","port":102,"label":"s7comm/102","weight":1.0,"bandwidth":"","trust":"","notes":"","directed":false,"attrs":{}},{"source":"eng-ot","target":"plc-line1","kind":"switched","protocol":"s7comm","port":102,"label":"s7comm/102","weight":1.0,"bandwidth":"","trust":"","notes":"Programming access","directed":false,"attrs":{}},{"source":"eng-ot","target":"plc-line2","kind":"switched","protocol":"s7comm","port":102,"label":"s7comm/102","weight":1.0,"bandwidth":"","trust":"","notes":"Programming access","directed":false,"attrs":{}}],"zones":[{"id":"Internet","label":"Internet","order":0,"slot":0},{"id":"Perimeter","label":"Perimeter","order":1,"slot":1},{"id":"DMZ","label":"DMZ","order":2,"slot":2},{"id":"Corp Workstations","label":"Corp Workstations","order":3,"slot":3},{"id":"App Servers","label":"App Servers","order":4,"slot":4},{"id":"Identity","label":"Identity","order":5,"slot":5},{"id":"Database","label":"Database","order":6,"slot":6},{"id":"OT / ICS","label":"OT / ICS","order":7,"slot":7}],"paths":[{"id":"ap-ransomware","name":"VPN credential theft to backup destruction","severity":"critical","score":9.4,"status":"confirmed","objective":"Destroy recovery capability, then encrypt production data","description":"Valid account on the legacy SSL-VPN group with no MFA, then reuse of a shared local administrator password to reach the backup repository before encryption.","actor":"TA-577 (suspected)","steps":[{"from":"actor-infra","to":"vpn-gw","technique":"T1078.004","tactic":"Initial Access","title":"Valid account on legacy VPN group","detail":"Credential-stuffed account, no MFA enforced.","ts":1786410720000.0,"likelihood":0.9,"port":443,"protocol":"https"},{"from":"vpn-gw","to":"dmz-jump","technique":"T1021.001","tactic":"Lateral Movement","title":"RDP to DMZ jump host","detail":"VPN pool has unrestricted RDP to the jump box.","ts":1786412460000.0,"likelihood":0.85,"port":3389,"protocol":"rdp"},{"from":"dmz-jump","to":"corp-sw","technique":"T1210","tactic":"Discovery","title":"Pivot into the corporate VLAN","detail":"Over-permissive DMZ-to-corp SMB rule.","ts":1786413900000.0,"likelihood":0.7,"port":445,"protocol":"smb"},{"from":"corp-sw","to":"dc01","technique":"T1558.003","tactic":"Credential Access","title":"Kerberoast then DCSync","detail":"Service account with weak SPN password; replication rights abused.","ts":1786417080000.0,"likelihood":0.75,"port":88,"protocol":"kerberos"},{"from":"dc01","to":"backup01","technique":"T1078.002","tactic":"Impact","title":"Backup repository reached with domain admin","detail":"Veeam service account is a domain admin; repositories deleted.","ts":1786419600000.0,"likelihood":0.8,"port":445,"protocol":"smb"},{"from":"backup01","to":"sql01","technique":"T1486","tactic":"Impact","title":"Encryption of production database volumes","detail":"Ransomware deployed after recovery points were removed.","ts":1786422360000.0,"likelihood":0.65,"port":1433,"protocol":"mssql"}],"nodes":["actor-infra","vpn-gw","dmz-jump","corp-sw","dc01","backup01","sql01"],"missing":[],"start":1786410720000.0,"end":1786422360000.0},{"id":"ap-webexfil","name":"Public web app to customer data exfiltration","severity":"critical","score":8.9,"status":"confirmed","objective":"Bulk export of the customer PII table","description":"Session-token theft on the storefront leads to Log4j RCE on the app tier and reuse of the application's database credentials.","actor":"TA-577 (suspected)","steps":[{"from":"actor-infra","to":"www01","technique":"T1190","tactic":"Initial Access","title":"Session hijack via CVE-2023-4966","detail":"Unauthenticated memory disclosure returns a valid session token.","ts":1786409220000.0,"likelihood":0.9,"port":443,"protocol":"https"},{"from":"www01","to":"app01","technique":"T1190","tactic":"Execution","title":"Log4Shell RCE on the app tier","detail":"JNDI lookup in a logged header; outbound LDAP was not blocked.","ts":1786410120000.0,"likelihood":0.95,"port":8080,"protocol":"http"},{"from":"app01","to":"sql01","technique":"T1078","tactic":"Collection","title":"Database access with the app service account","detail":"Connection string read from disk; account has db_owner.","ts":1786412160000.0,"likelihood":0.9,"port":1433,"protocol":"mssql"},{"from":"sql01","to":"actor-infra","technique":"T1048.003","tactic":"Exfiltration","title":"Staged export over HTTPS","detail":"4.2M customer rows chunked and posted to actor infrastructure.","ts":1786414800000.0,"likelihood":0.8,"port":443,"protocol":"https"}],"nodes":["actor-infra","www01","app01","sql01"],"missing":[],"start":1786409220000.0,"end":1786414800000.0},{"id":"ap-ot","name":"CI/CD pipeline into the plant network","severity":"serious","score":7.6,"status":"hypothesis","objective":"Reach line PLCs through the engineering workstation","description":"Not observed end to end. Modelled from the build agent's standing artefact-push route across the IT/OT boundary.","actor":"","steps":[{"from":"wks-eng-021","to":"jenkins01","technique":"T1078","tactic":"Initial Access","title":"Developer credentials on the CI server","detail":"","ts":1786425000000.0,"likelihood":0.5,"port":443,"protocol":"https"},{"from":"jenkins01","to":"eng-ot","technique":"T1195.002","tactic":"Lateral Movement","title":"Poisoned artefact pushed to OT","detail":"Build agent runs as root and holds a standing route through ot-fw.","ts":1786427700000.0,"likelihood":0.45,"port":443,"protocol":"https"},{"from":"eng-ot","to":"plc-line1","technique":"T0843","tactic":"Impact","title":"Program download to line 1 PLC","detail":"S7comm programming access is unauthenticated on this segment.","ts":1786429800000.0,"likelihood":0.35,"port":102,"protocol":"s7comm"}],"nodes":["wks-eng-021","jenkins01","eng-ot","plc-line1"],"missing":[],"start":1786425000000.0,"end":1786429800000.0}],"events":[{"id":"ev-001","ts":1786408860000.0,"nodes":["www01"],"severity":"warning","phase":"Reconnaissance","phaseRank":0,"title":"Directory brute force from 198.51.100.77","detail":"4,812 requests in 90s against /admin paths.","technique":"T1595.003","source":"WAF","path":"","step":0},{"id":"ev-002","ts":1786409220000.0,"nodes":["www01"],"severity":"critical","phase":"Initial Access","phaseRank":10,"title":"CVE-2023-4966 exploitation","detail":"Memory disclosure signature matched; session token returned.","technique":"T1190","source":"IDS","path":"ap-webexfil","step":0},{"id":"ev-003","ts":1786409520000.0,"nodes":["www01"],"severity":"serious","phase":"Execution","phaseRank":20,"title":"Web shell written to /tmp","detail":"nginx worker spawned /bin/sh.","technique":"T1505.003","source":"EDR","path":"ap-webexfil","step":0},{"id":"ev-004","ts":1786410120000.0,"nodes":["www01","app01"],"severity":"critical","phase":"Execution","phaseRank":20,"title":"Log4Shell JNDI callout","detail":"Outbound LDAP to actor infrastructure on 1389.","technique":"T1190","source":"EDR","path":"ap-webexfil","step":1},{"id":"ev-005","ts":1786410540000.0,"nodes":["app01"],"severity":"serious","phase":"Persistence","phaseRank":30,"title":"Cron entry added by tomcat user","detail":"","technique":"T1053.003","source":"EDR","path":"ap-webexfil","step":1},{"id":"ev-006","ts":1786410720000.0,"nodes":["vpn-gw"],"severity":"critical","phase":"Initial Access","phaseRank":10,"title":"VPN login, legacy group, no MFA","detail":"Account j.mercer from an unfamiliar ASN.","technique":"T1078.004","source":"VPN","path":"ap-ransomware","step":0},{"id":"ev-007","ts":1786411200000.0,"nodes":["vpn-gw"],"severity":"warning","phase":"Discovery","phaseRank":55,"title":"Internal port sweep from VPN pool","detail":"1,024 ports across 10.10.20.0/24.","technique":"T1046","source":"NDR","path":"ap-ransomware","step":0},{"id":"ev-008","ts":1786412160000.0,"nodes":["app01","sql01"],"severity":"critical","phase":"Collection","phaseRank":70,"title":"Bulk SELECT on customers table","detail":"4.2M rows read by the app service account.","technique":"T1078","source":"DAM","path":"ap-webexfil","step":2},{"id":"ev-009","ts":1786412460000.0,"nodes":["vpn-gw","dmz-jump"],"severity":"serious","phase":"Lateral Movement","phaseRank":60,"title":"RDP session to jump host","detail":"Local administrator, not the domain account.","technique":"T1021.001","source":"EDR","path":"ap-ransomware","step":1},{"id":"ev-010","ts":1786413480000.0,"nodes":["dmz-jump"],"severity":"serious","phase":"Defense Evasion","phaseRank":35,"title":"Windows Defender exclusions added","detail":"","technique":"T1562.001","source":"EDR","path":"ap-ransomware","step":1},{"id":"ev-011","ts":1786413900000.0,"nodes":["dmz-jump","corp-sw"],"severity":"serious","phase":"Discovery","phaseRank":55,"title":"SMB enumeration into corp VLAN","detail":"DMZ-to-corp rule permits 445/tcp.","technique":"T1135","source":"NDR","path":"ap-ransomware","step":2},{"id":"ev-012","ts":1786414800000.0,"nodes":["sql01","actor-infra"],"severity":"critical","phase":"Exfiltration","phaseRank":85,"title":"1.9 GB uploaded over HTTPS","detail":"Chunked POSTs to 198.51.100.77.","technique":"T1048.003","source":"Proxy","path":"ap-webexfil","step":3},{"id":"ev-013","ts":1786415640000.0,"nodes":["wks-hr-014"],"severity":"warning","phase":"Initial Access","phaseRank":10,"title":"Phishing attachment opened","detail":"Macro-enabled invoice; blocked at execution.","technique":"T1566.001","source":"Mail","path":"","step":0},{"id":"ev-014","ts":1786416420000.0,"nodes":["wks-fin-003"],"severity":"serious","phase":"Credential Access","phaseRank":50,"title":"LSASS handle opened by unsigned binary","detail":"","technique":"T1003.001","source":"EDR","path":"ap-ransomware","step":3},{"id":"ev-015","ts":1786417080000.0,"nodes":["corp-sw","dc01"],"severity":"critical","phase":"Credential Access","phaseRank":50,"title":"Kerberoasting then DCSync","detail":"Replication request from a non-DC host.","technique":"T1558.003","source":"EDR","path":"ap-ransomware","step":3},{"id":"ev-016","ts":1786417860000.0,"nodes":["dc01"],"severity":"critical","phase":"Privilege Escalation","phaseRank":40,"title":"New account added to Domain Admins","detail":"svc-backup-2 created and elevated.","technique":"T1098","source":"AD Audit","path":"ap-ransomware","step":3},{"id":"ev-017","ts":1786418340000.0,"nodes":["dc02"],"severity":"serious","phase":"Discovery","phaseRank":55,"title":"Full LDAP dump","detail":"","technique":"T1087.002","source":"AD Audit","path":"","step":0},{"id":"ev-018","ts":1786418760000.0,"nodes":["adfs01"],"severity":"warning","phase":"Credential Access","phaseRank":50,"title":"Token signing certificate exported","detail":"Attempted; blocked by the HSM policy.","technique":"T1552.004","source":"EDR","path":"","step":0},{"id":"ev-019","ts":1786419600000.0,"nodes":["dc01","backup01"],"severity":"critical","phase":"Impact","phaseRank":95,"title":"Backup repositories deleted","detail":"17 restore points removed in 6 minutes.","technique":"T1490","source":"Veeam","path":"ap-ransomware","step":4},{"id":"ev-020","ts":1786420680000.0,"nodes":["backup01"],"severity":"critical","phase":"Defense Evasion","phaseRank":35,"title":"Volume shadow copies deleted","detail":"vssadmin delete shadows /all /quiet","technique":"T1490","source":"EDR","path":"ap-ransomware","step":4},{"id":"ev-021","ts":1786422360000.0,"nodes":["backup01","sql01"],"severity":"critical","phase":"Impact","phaseRank":95,"title":"Ransomware binary executed","detail":"Encryption of D:\\ and E:\\ volumes begins.","technique":"T1486","source":"EDR","path":"ap-ransomware","step":5},{"id":"ev-022","ts":1786422660000.0,"nodes":["sql01"],"severity":"critical","phase":"Impact","phaseRank":95,"title":"Database service stopped","detail":"MSSQLSERVER stopped to unlock data files.","technique":"T1489","source":"SIEM","path":"ap-ransomware","step":5},{"id":"ev-023","ts":1786423200000.0,"nodes":["erp-db"],"severity":"serious","phase":"Impact","phaseRank":95,"title":"Encryption attempt blocked","detail":"Behavioural rule quarantined the payload.","technique":"T1486","source":"EDR","path":"","step":0},{"id":"ev-024","ts":1786423920000.0,"nodes":["hist01"],"severity":"warning","phase":"Discovery","phaseRank":55,"title":"SMB scan crossing the IT/OT boundary","detail":"Sourced from the corporate side of ot-fw.","technique":"T1046","source":"OT NDR","path":"","step":0},{"id":"ev-025","ts":1786425000000.0,"nodes":["wks-eng-021","jenkins01"],"severity":"warning","phase":"Initial Access","phaseRank":10,"title":"Developer credentials used from a new host","detail":"","technique":"T1078","source":"CI","path":"ap-ot","step":0},{"id":"ev-026","ts":1786426380000.0,"nodes":["jenkins01"],"severity":"serious","phase":"Execution","phaseRank":20,"title":"Unsigned build step added to pipeline","detail":"Change pushed outside the review window.","technique":"T1195.002","source":"CI","path":"ap-ot","step":1},{"id":"ev-027","ts":1786427700000.0,"nodes":["jenkins01","eng-ot"],"severity":"serious","phase":"Lateral Movement","phaseRank":60,"title":"Artefact pushed across ot-fw","detail":"","technique":"T1195.002","source":"OT NDR","path":"ap-ot","step":1},{"id":"ev-028","ts":1786428720000.0,"nodes":["hmi01"],"severity":"warning","phase":"Discovery","phaseRank":55,"title":"Unexpected OPC browse request","detail":"","technique":"T0846","source":"OT NDR","path":"","step":0},{"id":"ev-029","ts":1786429800000.0,"nodes":["eng-ot","plc-line1"],"severity":"serious","phase":"Impact","phaseRank":95,"title":"S7comm program download attempted","detail":"Blocked by the plant change-control interlock.","technique":"T0843","source":"OT IDS","path":"ap-ot","step":2},{"id":"ev-030","ts":1786431900000.0,"nodes":["edge-fw"],"severity":"good","phase":"Containment","phaseRank":50,"title":"Actor infrastructure blocked at the edge","detail":"198.51.100.0/24 null-routed; VPN group disabled.","technique":"","source":"Firewall","path":"","step":0}],"stats":{"nodes":33,"links":49,"zones":8,"paths":3,"events":30,"byState":{"critical":9,"serious":5,"warning":7,"clean":12},"byPathSeverity":{"critical":2,"serious":1,"warning":0,"good":0},"byZone":{"Internet":2,"Perimeter":3,"DMZ":4,"Corp Workstations":5,"App Servers":5,"Identity":4,"Database":4,"OT / ICS":6},"cves":12,"kev":6,"crownJewels":21,"timeStart":1786408860000.0,"timeEnd":1786431900000.0},"warnings":[],"sources":[{"role":"topology","path":"demo/topology.graphml","mtime":1787094631.9125583},{"role":"attacks","path":"demo/attacks.json","mtime":1787094631.9154234},{"role":"timeline","path":"demo/timeline.json","mtime":1787094631.915838}],"vocab":{"stateLabels":{"critical":"Compromised","serious":"Suspected","warning":"Vulnerable","clean":"Clean"},"stateOrder":["critical","serious","warning","clean"],"critLabels":{"4":"Critical","3":"High","2":"Medium","1":"Low"},"severityLabels":{"critical":"Critical","serious":"High","warning":"Medium","good":"Low"},"severityRank":{"critical":4,"serious":3,"warning":2,"good":1}}}</script>
+<script>
+"use strict";
+/* ====================================================================== *
+ * netmap UI - state, palette, layout, simulation
+ * ====================================================================== */
+
+const $  = (id) => document.getElementById(id);
+const el = (tag, cls, txt) => { const n = document.createElement(tag);
+  if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+
+let DATA = JSON.parse($("netmap-data").textContent);
+
+/* Every status colour is paired with a glyph and a word, so colour is never
+   the only carrier of meaning. */
+const STATE_GLYPH = { critical: "✕", serious: "!", warning: "▲", clean: "" };
+const SEV_GLYPH   = { critical: "✕", serious: "!", warning: "▲", good: "●" };
+
+const S = {
+  layout: "zones", colorBy: "zone", query: "",
+  zonesOff: new Set(), statesOff: new Set(), critsOff: new Set(),
+  onlyPaths: false, onlyCve: false, onlyKev: false, onlyWindow: false,
+  hideFiltered: false, showLabels: true, showEdgeLabels: false,
+  selNode: null, selLink: null, selPath: null, hop: -1, selEvent: null,
+  hoverNode: null, hoverLink: null,
+  win: null, cursor: null, playing: false, speed: 1,
+  view: { x: 0, y: 0, k: 1 }, world: { w: 1200, h: 800 },
+  theme: "dark", sheetTab: "assets", sheetSort: {}, sheetOpen: false,
+  alpha: 1, dragging: null, panning: null, matches: new Set(), blast: 0, needsFit: true, legendOpen: true, legendOpen: true,
+};
+
+/* ---- palette (read from CSS so the theme toggle drives everything) --- */
+let PAL = {};
+function refreshPalette() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (n) => cs.getPropertyValue(n).trim();
+  PAL = {
+    series: [v("--s1"), v("--s2"), v("--s3"), v("--s4"),
+             v("--s5"), v("--s6"), v("--s7"), v("--s8")],
+    other: v("--other"),
+    seq: [v("--seq-1"), v("--seq-2"), v("--seq-3"), v("--seq-4")],
+    status: { good: v("--st-good"), warning: v("--st-warning"),
+              serious: v("--st-serious"), critical: v("--st-critical"),
+              clean: v("--muted") },
+    surface: v("--surface-1"), panel: v("--panel"), grid: v("--grid"), axis: v("--axis"),
+    ink1: v("--text-1"), ink2: v("--text-2"), muted: v("--muted"),
+  };
+}
+
+const zoneSlot = new Map();
+const pathSlot = new Map();
+const ZONE_ANCHOR = new Map();   // force layout: where each zone cluster lives
+const ZONE_RING = new Map();     // radial layout: ring radius per zone
+let RADIAL_CENTRE = [0, 0];
+
+function nodeColor(n) {
+  switch (S.colorBy) {
+    case "state": return PAL.status[n.state] || PAL.muted;
+    case "crit":  return PAL.seq[clamp(n.crit, 1, 4) - 1];
+    case "risk": {
+      const c = n.maxCvss || 0;
+      if (c <= 0) return PAL.muted;
+      return PAL.seq[c >= 9 ? 3 : c >= 7 ? 2 : c >= 4 ? 1 : 0];
+    }
+    default: {
+      const slot = zoneSlot.get(n.zone);
+      return slot == null || slot < 0 ? PAL.other : PAL.series[slot];
+    }
+  }
+}
+function pathColor(p) { const s = pathSlot.get(p.id); return PAL.series[(s == null ? 0 : s) % 8]; }
+
+/* ---- model preparation ---------------------------------------------- */
+let NODES = [], LINKS = [], BYID = new Map(), ADJ = new Map(), EDGEKEY = new Set();
+
+function prepare(previous) {
+  zoneSlot.clear();
+  DATA.zones.forEach(z => zoneSlot.set(z.id, z.slot));
+  pathSlot.clear();
+  DATA.paths.forEach((p, i) => pathSlot.set(p.id, i % 8));
+
+  NODES = DATA.nodes.map(n => {
+    const prev = previous && previous.get(n.id);
+    return Object.assign({}, n, {
+      x: prev ? prev.x : 0, y: prev ? prev.y : 0,
+      vx: 0, vy: 0, r: 5 + (clamp(n.crit, 1, 4) - 1) * 1.5,
+      pinned: prev ? prev.pinned : false, placed: !!prev,
+    });
+  });
+  BYID = new Map(NODES.map(n => [n.id, n]));
+  ADJ = new Map(NODES.map(n => [n.id, []]));
+  EDGEKEY = new Set();
+  LINKS = [];
+  DATA.links.forEach(l => {
+    const a = BYID.get(l.source), b = BYID.get(l.target);
+    if (!a || !b || a === b) return;
+    const link = Object.assign({}, l, { a, b });
+    LINKS.push(link);
+    ADJ.get(a.id).push({ node: b, link }); ADJ.get(b.id).push({ node: a, link });
+    EDGEKEY.add(a.id + "\u001f" + b.id); EDGEKEY.add(b.id + "\u001f" + a.id);
+  });
+
+  // Resolve attack-path steps against real nodes once, up front.
+  DATA.paths.forEach(p => {
+    p._steps = p.steps.map(st => ({
+      raw: st,
+      from: st.from ? BYID.get(st.from) : null,
+      to: BYID.get(st.to) || null,
+      physical: !!(st.from && EDGEKEY.has(st.from + "\u001f" + st.to)),
+    }));
+  });
+  DATA.events.forEach(e => { e._nodes = e.nodes.map(id => BYID.get(id)).filter(Boolean); });
+}
+
+/* ---- layout ---------------------------------------------------------- */
+function seedPositions() {
+  const zones = DATA.zones.map(z => z.id);
+  const counts = new Map();
+  NODES.forEach(n => counts.set(n.zone, (counts.get(n.zone) || 0) + 1));
+  const maxPer = Math.max(4, ...(counts.size ? [...counts.values()] : [4]));
+
+  if (S.layout === "file" && !NODES.some(n => n.fx != null && n.fy != null)) {
+    S.layout = "force";
+    const sel = $("layout"); if (sel) sel.value = "force";
+    toast("This topology has no saved x/y coordinates — using the force layout.", "warn");
+  }
+
+  if (S.layout === "zones") {
+    S.world = { w: Math.max(900, zones.length * 250), h: Math.max(660, maxPer * 88) };
+    const seen = new Map();
+    NODES.forEach(n => {
+      const zi = Math.max(0, zones.indexOf(n.zone));
+      const k = (seen.get(n.zone) || 0); seen.set(n.zone, k + 1);
+      const total = counts.get(n.zone) || 1;
+      n.tx = (zi + 0.5) * (S.world.w / Math.max(1, zones.length));
+      n.ty = S.world.h * (total === 1 ? 0.5 : 0.07 + 0.86 * (k / (total - 1)));
+      if (!n.placed) { n.x = n.tx + (Math.random() - 0.5) * 60; n.y = n.ty; }
+    });
+  } else if (S.layout === "radial") {
+    // Concentric rings: internet on the outside, crown jewels in the middle.
+    // Ring radii grow with occupancy so nodes never crowd the inner rings.
+    const need = [];
+    zones.forEach(z => need.push(Math.max(1, counts.get(z) || 0) * 38 / (Math.PI * 2)));
+    const R = Math.max(430, 62 * Math.sqrt(NODES.length) + zones.length * 40,
+                       Math.max(...need) * 2.4);
+    S.world = { w: R * 2.5, h: R * 2.5 };
+    const cx = S.world.w / 2, cy = S.world.h / 2;
+    RADIAL_CENTRE = [cx, cy];
+    ZONE_RING.clear();
+    const seen = new Map();
+    zones.forEach((z, zi) => {
+      const t = zones.length > 1 ? zi / (zones.length - 1) : 0;
+      const rr = Math.max(R * (0.32 + 0.68 * (1 - t)), need[zi]);
+      ZONE_RING.set(z, rr);
+    });
+    NODES.forEach(n => {
+      const zi = Math.max(0, zones.indexOf(n.zone));
+      const rr = ZONE_RING.get(n.zone) || 100;
+      const k = (seen.get(n.zone) || 0); seen.set(n.zone, k + 1);
+      const total = counts.get(n.zone) || 1;
+      const ang = ((k + 0.5) / total) * Math.PI * 2 + zi * 0.37;
+      n.tx = cx + Math.cos(ang) * rr; n.ty = cy + Math.sin(ang) * rr;
+      n.x = n.tx; n.y = n.ty;
+    });
+  } else if (S.layout === "file") {
+    const xs = [], ys = [];
+    NODES.forEach(n => { if (n.fx != null) { xs.push(n.fx); ys.push(n.fy); } });
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const sc = Math.min(1100 / Math.max(1e-6, x1 - x0), 760 / Math.max(1e-6, y1 - y0));
+    S.world = { w: (x1 - x0) * sc + 140, h: (y1 - y0) * sc + 140 };
+    NODES.forEach(n => {
+      n.tx = n.fx != null ? (n.fx - x0) * sc + 70 : S.world.w / 2;
+      n.ty = n.fy != null ? (n.fy - y0) * sc + 70 : S.world.h / 2;
+      n.x = n.tx; n.y = n.ty; n.pinned = n.fx != null;
+    });
+  } else {
+    // Grouped force layout: each zone gets an anchor on a ring, so clusters
+    // stay separable and the zone outlines mean something.
+    const R = Math.max(300, 46 * Math.sqrt(NODES.length) + zones.length * 22);
+    S.world = { w: R * 2.5, h: R * 2.1 };
+    const cx = S.world.w / 2, cy = S.world.h / 2;
+    ZONE_ANCHOR.clear();
+    zones.forEach((z, i) => {
+      const ang = (i / Math.max(1, zones.length)) * Math.PI * 2 - Math.PI / 2;
+      ZONE_ANCHOR.set(z, [cx + Math.cos(ang) * R * 0.66, cy + Math.sin(ang) * R * 0.58]);
+    });
+    NODES.forEach(n => {
+      n.tx = null; n.ty = null;
+      if (!n.placed) {
+        const anc = ZONE_ANCHOR.get(n.zone) || [cx, cy];
+        n.x = anc[0] + (Math.random() - 0.5) * 80;
+        n.y = anc[1] + (Math.random() - 0.5) * 80;
+      }
+    });
+  }
+  NODES.forEach(n => { n.placed = true; n.vx = 0; n.vy = 0; });
+  S.alpha = 1;
+  S.needsFit = true;
+}
+
+/* Spatial hash so repulsion stays near-linear on large graphs. */
+function buildGrid(cell) {
+  const g = new Map();
+  for (const n of NODES) {
+    const key = ((n.x / cell) | 0) + "," + ((n.y / cell) | 0);
+    let bucket = g.get(key); if (!bucket) g.set(key, bucket = []);
+    bucket.push(n);
+  }
+  return g;
+}
+
+function simulate() {
+  if (S.alpha < 0.005 || !NODES.length) return false;
+  const a = S.alpha;
+  const cell = 64, grid = buildGrid(cell);
+  const charge = S.layout === "zones" ? 900 : (S.layout === "radial" ? 380 : 1600);
+
+  for (const n of NODES) {
+    const cx = (n.x / cell) | 0, cy = (n.y / cell) | 0;
+    for (let ix = cx - 1; ix <= cx + 1; ix++) {
+      for (let iy = cy - 1; iy <= cy + 1; iy++) {
+        const bucket = grid.get(ix + "," + iy); if (!bucket) continue;
+        for (const m of bucket) {
+          if (m === n) continue;
+          let dx = n.x - m.x, dy = n.y - m.y, d2 = dx * dx + dy * dy;
+          if (d2 > 26000) continue;
+          if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
+          const f = (charge / d2) * a * 0.02;
+          n.vx += dx * f; n.vy += dy * f;
+        }
+      }
+    }
+  }
+  const rest = S.layout === "zones" ? 78 : 100;
+  const springK = S.layout === "zones" ? 0.028 : (S.layout === "radial" ? 0.012 : 0.055);
+  for (const l of LINKS) {
+    const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    const f = ((d - rest) / d) * springK * a;
+    const ux = dx * f, uy = dy * f;
+    l.a.vx += ux; l.a.vy += uy; l.b.vx -= ux; l.b.vy -= uy;
+  }
+  if (S.layout === "force" && ZONE_ANCHOR.size) {
+    const cen = new Map();
+    for (const n of NODES) {
+      let c = cen.get(n.zone);
+      if (!c) cen.set(n.zone, c = { x: 0, y: 0, n: 0 });
+      c.x += n.x; c.y += n.y; c.n++;
+    }
+    cen.forEach(c => { c.x /= c.n; c.y /= c.n; });
+    for (const n of NODES) {
+      const c = cen.get(n.zone), anc = ZONE_ANCHOR.get(n.zone);
+      if (c) { n.vx += (c.x - n.x) * 0.055 * a; n.vy += (c.y - n.y) * 0.055 * a; }
+      if (anc) { n.vx += (anc[0] - n.x) * 0.022 * a; n.vy += (anc[1] - n.y) * 0.022 * a; }
+    }
+  }
+  const cxw = S.world.w / 2, cyw = S.world.h / 2;
+  for (const n of NODES) {
+    if (n.tx != null) {
+      const kx = S.layout === "zones" ? 0.17 : (S.layout === "radial" ? 0.30 : 0.05);
+      const ky = S.layout === "zones" ? 0.06 : (S.layout === "radial" ? 0.30 : 0.05);
+      n.vx += (n.tx - n.x) * kx * a; n.vy += (n.ty - n.y) * ky * a;
+    } else {
+      n.vx += (cxw - n.x) * 0.006 * a; n.vy += (cyw - n.y) * 0.006 * a;
+    }
+    if (n.pinned || n === S.dragging) { n.vx = 0; n.vy = 0; continue; }
+    n.vx *= 0.80; n.vy *= 0.80;
+    n.x += clamp(n.vx, -24, 24); n.y += clamp(n.vy, -24, 24);
+  }
+  // Collision pass, so hit targets never overlap.
+  for (let pass = 0; pass < 2; pass++) {
+    const g2 = buildGrid(40);
+    for (const n of NODES) {
+      const cx2 = (n.x / 40) | 0, cy2 = (n.y / 40) | 0;
+      for (let ix = cx2 - 1; ix <= cx2 + 1; ix++)
+        for (let iy = cy2 - 1; iy <= cy2 + 1; iy++) {
+          const bucket = g2.get(ix + "," + iy); if (!bucket) continue;
+          for (const m of bucket) {
+            if (m === n) continue;
+            const dx = m.x - n.x, dy = m.y - n.y;
+            const min = n.r + m.r + 8, d = Math.hypot(dx, dy);
+            if (d > 0.001 && d < min) {
+              const push = (min - d) / d * 0.5;
+              if (!n.pinned && n !== S.dragging) { n.x -= dx * push; n.y -= dy * push; }
+              if (!m.pinned && m !== S.dragging) { m.x += dx * push; m.y += dy * push; }
+            }
+          }
+        }
+    }
+  }
+  S.alpha *= 0.978;
+  return true;
+}
+
+/* ====================================================================== *
+ * Filtering, emphasis and canvas rendering
+ * ====================================================================== */
+
+const cv = $("graph"), ctx = cv.getContext("2d");
+let DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+function inWindow(ts) {
+  if (!S.win) return true;
+  return ts >= S.win[0] && ts <= S.win[1];
+}
+function windowEvents() {
+  return DATA.events.filter(e => inWindow(e.ts) &&
+    (S.cursor == null || e.ts <= S.cursor));
+}
+let ACTIVE_NODES = new Set();   // nodes touched by events in the current window
+function recomputeActive() {
+  ACTIVE_NODES = new Set();
+  windowEvents().forEach(e => e.nodes.forEach(id => ACTIVE_NODES.add(id)));
+}
+
+function computeMatches() {
+  S.matches = new Set();
+  const q = S.query.trim().toLowerCase();
+  if (!q) return;
+  const terms = q.split(/\s+/);
+  for (const n of NODES) {
+    const hay = [n.id, n.label, n.ip, n.mac, n.os, n.zone, n.kind, n.owner, n.notes,
+      n.tags.join(" "),
+      n.services.map(s => [s.port, s.proto, s.name].filter(Boolean).join(" ")).join(" "),
+      n.cves.map(c => c.id + " " + (c.cvss || "")).join(" ")]
+      .join(" ").toLowerCase();
+    if (terms.every(t => hay.includes(t))) S.matches.add(n.id);
+  }
+}
+
+function nodePasses(n) {
+  if (S.zonesOff.has(n.zone)) return false;
+  if (S.statesOff.has(n.state)) return false;
+  if (S.critsOff.has(String(n.crit))) return false;
+  if (S.onlyPaths && !(n.paths && n.paths.length)) return false;
+  if (S.onlyCve && !n.cves.length) return false;
+  if (S.onlyKev && !n.kev) return false;
+  if (S.onlyWindow && !ACTIVE_NODES.has(n.id)) return false;
+  return true;
+}
+
+let PATH_NODES = new Set(), HOP_NODES = new Set(), BLAST = new Map();
+function recomputeEmphasis() {
+  PATH_NODES = new Set(); HOP_NODES = new Set();
+  const p = selectedPath();
+  if (p) {
+    p.nodes.forEach(id => PATH_NODES.add(id));
+    if (S.hop >= 0 && p._steps[S.hop]) {
+      const st = p._steps[S.hop];
+      if (st.from) HOP_NODES.add(st.from.id);
+      if (st.to) HOP_NODES.add(st.to.id);
+    }
+  }
+  BLAST = new Map();
+  if (S.selNode && S.blast > 0) {
+    let frontier = [S.selNode.id]; BLAST.set(S.selNode.id, 0);
+    for (let d = 1; d <= S.blast; d++) {
+      const next = [];
+      for (const id of frontier)
+        for (const nb of (ADJ.get(id) || []))
+          if (!BLAST.has(nb.node.id)) { BLAST.set(nb.node.id, d); next.push(nb.node.id); }
+      frontier = next;
+    }
+  }
+}
+function selectedPath() { return DATA.paths.find(p => p.id === S.selPath) || null; }
+
+function nodeAlpha(n) {
+  if (!nodePasses(n)) return S.hideFiltered ? 0 : 0.10;
+  let a = 1;
+  if (S.query && !S.matches.has(n.id)) a *= 0.3;
+  if (S.selPath && !PATH_NODES.has(n.id)) a *= 0.45;
+  if (S.selNode && S.blast > 0 && !BLAST.has(n.id)) a *= 0.4;
+  if ((S.cursor != null || S.win) && !ACTIVE_NODES.has(n.id)) a *= 0.65;
+  return Math.max(a, 0.16);   // context always stays legible
+}
+
+/* ---- geometry helpers ------------------------------------------------ */
+function hull(points) {
+  if (points.length < 3) return points;
+  const pts = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]);
+  const lower = [], upper = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+function withAlpha(hex, a) {
+  const h = (hex || "#888").replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const n = parseInt(full.slice(0, 6), 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+}
+const toScreen = (x, y) => [x * S.view.k + S.view.x, y * S.view.k + S.view.y];
+const toWorld  = (sx, sy) => [(sx - S.view.x) / S.view.k, (sy - S.view.y) / S.view.k];
+
+function ensureSize() {
+  const p = cv.parentElement;
+  const w = p.clientWidth, h = p.clientHeight;
+  if (!w || !h) return;
+  if (Math.abs(w - cv.clientWidth) > 1 || Math.abs(h - cv.clientHeight) > 1 ||
+      cv.width !== Math.round(w * DPR)) { resize(); needsRender = true; }
+}
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.parentElement.getBoundingClientRect();
+  cv.width = Math.max(1, Math.round(r.width * DPR));
+  cv.height = Math.max(1, Math.round(r.height * DPR));
+  cv.style.width = r.width + "px"; cv.style.height = r.height + "px";
+}
+
+function fitView(subset) {
+  const list = (subset && subset.length ? subset : NODES.filter(n => nodeAlpha(n) > 0.15));
+  const pool = list.length ? list : NODES;
+  if (!pool.length) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  pool.forEach(n => { x0 = Math.min(x0, n.x - n.r); y0 = Math.min(y0, n.y - n.r);
+                      x1 = Math.max(x1, n.x + n.r); y1 = Math.max(y1, n.y + n.r); });
+  if (!isFinite(x0) || !isFinite(y0)) return;
+  const w = cv.width / DPR, h = cv.height / DPR;
+  // Canvas not laid out yet - leave needsFit set and retry on the next frame.
+  if (w < 120 || h < 120) return;
+  // Extra head-room: zone band headers and node labels live outside the node
+  // bbox, and the on-canvas legend must not sit on top of assets.
+  const lg = $("legend");
+  const lgW = lg.offsetWidth, lgH = lg.offsetHeight;
+  const tall = lgH > h * 0.4;
+  const padX = 66, padTop = 56;
+  const padLeft = tall ? lgW + 26 : padX;
+  const padBottom = tall ? 46 : lgH + 30;
+  const k = clamp(Math.min((w - padLeft - padX) / Math.max(1, x1 - x0),
+                           (h - padTop - padBottom) / Math.max(1, y1 - y0)), 0.05, 2.4);
+  if (!isFinite(k) || k <= 0) return;
+  S.view.k = k;
+  S.view.x = padLeft + (w - padLeft - padX - (x1 - x0) * k) / 2 - x0 * k;
+  S.view.y = padTop + (h - padTop - padBottom - (y1 - y0) * k) / 2 - y0 * k;
+  S.needsFit = false;
+}
+
+/* ---- draw ------------------------------------------------------------ */
+function render() {
+  const w = cv.width / DPR, h = cv.height / DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.translate(S.view.x, S.view.y);
+  ctx.scale(S.view.k, S.view.k);
+  const k = S.view.k;
+
+  drawZoneScaffold(k, w, h);
+  drawLinks(k);
+  drawPaths(k);
+  drawNodes(k);
+  if (S.showLabels) drawLabels(k);
+
+  ctx.restore();
+}
+
+function drawZoneScaffold(k) {
+  const zones = DATA.zones;
+  if (!zones.length) return;
+  const hPx = cv.height / DPR;
+  const ytop = -S.view.y / k, ybot = (hPx - S.view.y) / k;
+  ctx.lineWidth = 1 / k;
+  if (S.layout === "zones") {
+    const bw = S.world.w / zones.length;
+    // Keep the band headers clear of the HUD pill row.
+    const hudH = $("hud").offsetHeight;
+    zones.forEach((z, i) => {
+      const col = z.slot < 0 ? PAL.other : PAL.series[z.slot];
+      const off = S.zonesOff.has(z.id);
+      ctx.fillStyle = withAlpha(col, off ? 0.02 : (i % 2 ? 0.07 : 0.035));
+      ctx.fillRect(i * bw, ytop, bw, ybot - ytop);
+      ctx.strokeStyle = PAL.grid;
+      ctx.beginPath(); ctx.moveTo(i * bw, ytop); ctx.lineTo(i * bw, ybot); ctx.stroke();
+      if (i === zones.length - 1) {
+        ctx.beginPath(); ctx.moveTo((i + 1) * bw, ytop);
+        ctx.lineTo((i + 1) * bw, ybot); ctx.stroke();
+      }
+      // Band header, pinned near the top of the viewport: the zone facet is
+      // always labelled, so colour only reinforces it.
+      const cx = i * bw + bw / 2, yLab = ytop + (hudH ? hudH + 28 : 30) / k;
+      ctx.save();
+      ctx.font = "600 " + (12 / k) + "px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      let text = z.label;
+      const room = bw * 0.9;
+      if (ctx.measureText(text).width > room) {
+        while (text.length > 2 && ctx.measureText(text + "\u2026").width > room)
+          text = text.slice(0, -1);
+        text += "\u2026";
+      }
+      ctx.fillStyle = off ? PAL.muted : PAL.ink2;
+      ctx.fillText(text, cx, yLab);
+      ctx.fillStyle = col;
+      ctx.fillRect(cx - 15 / k, yLab + 5 / k, 30 / k, 2.5 / k);
+      ctx.restore();
+    });
+  } else if (S.layout === "radial") {
+    const [cx, cy] = RADIAL_CENTRE;
+    const placed = [];
+    zones.slice().reverse().forEach((z, order) => {
+      const rr = ZONE_RING.get(z.id); if (!rr) return;
+      const col = z.slot < 0 ? PAL.other : PAL.series[z.slot];
+      const off = S.zonesOff.has(z.id);
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 6.2832);
+      ctx.fillStyle = withAlpha(col, off ? 0.015 : 0.045); ctx.fill();
+      ctx.strokeStyle = withAlpha(col, off ? 0.15 : 0.5); ctx.lineWidth = 1.2 / k; ctx.stroke();
+      // Ring labels fan to alternate sides of vertical and yield when they
+      // would collide, so tightly packed inner rings stay readable.
+      const ang = -Math.PI / 2 + (order % 2 ? 0.46 : -0.46);
+      const lx = cx + Math.cos(ang) * rr, ly = cy + Math.sin(ang) * rr;
+      const sx = lx * k + S.view.x, sy = ly * k + S.view.y;
+      if (placed.some(q => Math.abs(q[0] - sx) < 90 && Math.abs(q[1] - sy) < 17)) return;
+      placed.push([sx, sy]);
+      ctx.font = "600 " + (11 / k) + "px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const tw = ctx.measureText(z.label).width;
+      ctx.fillStyle = withAlpha(PAL.surface, 0.92);
+      ctx.fillRect(lx - tw / 2 - 6 / k, ly - 8 / k, tw + 12 / k, 16 / k);
+      ctx.fillStyle = col;
+      ctx.fillRect(lx - tw / 2 - 6 / k, ly + 8 / k, tw + 12 / k, 2 / k);
+      ctx.fillStyle = off ? PAL.muted : PAL.ink2;
+      ctx.fillText(z.label, lx, ly);
+    });
+  } else {
+    zones.forEach(z => {
+      const pts = NODES.filter(n => n.zone === z.id && nodeAlpha(n) > 0.05)
+                       .map(n => [n.x, n.y]);
+      if (pts.length < 3) return;
+      const hp = hull(pts);
+      if (hp.length < 3) return;
+      const hx = hp.map(q => q[0]), hy = hp.map(q => q[1]);
+      if (Math.max(...hx) - Math.min(...hx) > S.world.w * 0.55 &&
+          Math.max(...hy) - Math.min(...hy) > S.world.h * 0.55) return;
+      const col = z.slot < 0 ? PAL.other : PAL.series[z.slot];
+      const cx = hp.reduce((s2, p) => s2 + p[0], 0) / hp.length;
+      const cy = hp.reduce((s2, p) => s2 + p[1], 0) / hp.length;
+      const pad = 30;
+      ctx.beginPath();
+      hp.forEach((p, i) => {
+        const dx = p[0] - cx, dy = p[1] - cy, d = Math.max(1, Math.hypot(dx, dy));
+        const x = p[0] + dx / d * pad, y = p[1] + dy / d * pad;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = withAlpha(col, 0.09); ctx.fill();
+      ctx.strokeStyle = withAlpha(col, 0.55); ctx.lineWidth = 1.4 / k; ctx.stroke();
+      const top = hp.reduce((a, p) => p[1] < a[1] ? p : a, hp[0]);
+      const yLab = top[1] - pad - 9 / k;
+      ctx.font = "600 " + (11 / k) + "px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const tw = ctx.measureText(z.label).width;
+      ctx.fillStyle = withAlpha(PAL.surface, 0.85);
+      ctx.fillRect(cx - tw / 2 - 5 / k, yLab - 8 / k, tw + 10 / k, 16 / k);
+      ctx.fillStyle = withAlpha(col, 0.95);
+      ctx.fillRect(cx - tw / 2 - 5 / k, yLab + 7 / k, tw + 10 / k, 2 / k);
+      ctx.fillStyle = PAL.ink2;
+      ctx.fillText(z.label, cx, yLab);
+    });
+  }
+}
+
+function drawLinks(k) {
+  const showLabels = S.showEdgeLabels && k > 0.7;
+  for (const l of LINKS) {
+    const a = Math.min(nodeAlpha(l.a), nodeAlpha(l.b));
+    if (a <= 0.02) continue;
+    const focus = (S.selNode && (l.a === S.selNode || l.b === S.selNode)) ||
+                  (S.hoverNode && (l.a === S.hoverNode || l.b === S.hoverNode)) ||
+                  l === S.selLink || l === S.hoverLink;
+    ctx.strokeStyle = focus ? withAlpha(PAL.ink2, Math.min(1, a + 0.2))
+                            : withAlpha(PAL.axis, a * 0.85);
+    ctx.lineWidth = (focus ? 2 : 1.1) / k;
+    ctx.beginPath(); ctx.moveTo(l.a.x, l.a.y); ctx.lineTo(l.b.x, l.b.y); ctx.stroke();
+    if (DATA.directed) arrow(l.a, l.b, k, ctx.strokeStyle, 1);
+    if (showLabels && l.label && a > 0.4) {
+      ctx.save();
+      ctx.font = (9.5 / k) + "px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const mx = (l.a.x + l.b.x) / 2, my = (l.a.y + l.b.y) / 2;
+      const tw = ctx.measureText(l.label).width;
+      ctx.fillStyle = withAlpha(PAL.surface, 0.88);
+      ctx.fillRect(mx - tw / 2 - 3 / k, my - 6 / k, tw + 6 / k, 12 / k);
+      ctx.fillStyle = withAlpha(PAL.muted, a);
+      ctx.fillText(l.label, mx, my);
+      ctx.restore();
+    }
+  }
+}
+
+function arrow(a, b, k, color, scale) {
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const d = Math.hypot(b.x - a.x, b.y - a.y);
+  if (d < b.r + 6) return;
+  const tipX = b.x - Math.cos(ang) * (b.r + 3.5), tipY = b.y - Math.sin(ang) * (b.r + 3.5);
+  const s = (7 * (scale || 1)) / k;
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX - Math.cos(ang - 0.4) * s, tipY - Math.sin(ang - 0.4) * s);
+  ctx.lineTo(tipX - Math.cos(ang + 0.4) * s, tipY - Math.sin(ang + 0.4) * s);
+  ctx.closePath();
+  ctx.fillStyle = color; ctx.fill();
+}
+
+function drawPaths(k) {
+  const sel = selectedPath();
+  const list = sel ? [sel] : (S.showAllPaths ? DATA.paths : []);
+  const dash = (Date.now() / 42) % 24;
+  for (const p of list) {
+    const col = pathColor(p);
+    const isSel = p === sel;
+    p._steps.forEach((st, i) => {
+      if (!st.to) return;
+      const from = st.from || (i > 0 ? p._steps[i - 1].to : null);
+      if (!from) return;
+      if (S.cursor != null && st.raw.ts != null && st.raw.ts > S.cursor) return;
+      const current = isSel && i === S.hop;
+      const dim = isSel && S.hop >= 0 && !current;
+      const alpha = dim ? 0.3 : 1;
+      const curve = !st.physical;
+      ctx.save();
+      ctx.lineCap = "round";
+      // 2px surface halo so the overlay separates from links beneath it.
+      ctx.strokeStyle = withAlpha(PAL.surface, 0.9 * alpha);
+      ctx.lineWidth = (current ? 8.5 : 6.5) / k;
+      strokeHop(from, st.to, curve, k, 0);
+      ctx.strokeStyle = withAlpha(col, alpha);
+      ctx.lineWidth = (current ? 3.4 : 2.2) / k;
+      if (curve) { ctx.setLineDash([7 / k, 5 / k]); ctx.lineDashOffset = -dash / k; }
+      strokeHop(from, st.to, curve, k, 0);
+      ctx.setLineDash([]);
+      arrow(from, st.to, k, withAlpha(col, alpha), current ? 1.25 : 1);
+      ctx.restore();
+      if (k > 0.42) hopBadge(from, st.to, curve, i + 1, col, k, current, alpha);
+    });
+  }
+}
+
+function hopGeom(a, b, curve) {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  if (!curve) return { cx: mx, cy: my };
+  const dx = b.x - a.x, dy = b.y - a.y, d = Math.max(1, Math.hypot(dx, dy));
+  const bow = Math.min(90, d * 0.22);
+  return { cx: mx - dy / d * bow, cy: my + dx / d * bow };
+}
+function strokeHop(a, b, curve, k) {
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  if (curve) { const g = hopGeom(a, b, true); ctx.quadraticCurveTo(g.cx, g.cy, b.x, b.y); }
+  else ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+}
+function hopBadge(a, b, curve, n, col, k, current, alpha) {
+  const g = hopGeom(a, b, curve);
+  const px = curve ? (a.x + 2 * g.cx + b.x) / 4 : g.cx;
+  const py = curve ? (a.y + 2 * g.cy + b.y) / 4 : g.cy;
+  const r = (current ? 10 : 8.5) / k;
+  ctx.beginPath(); ctx.arc(px, py, r + 2 / k, 0, 6.2832);
+  ctx.fillStyle = withAlpha(PAL.surface, 0.95 * alpha); ctx.fill();
+  ctx.beginPath(); ctx.arc(px, py, r, 0, 6.2832);
+  ctx.fillStyle = withAlpha(col, alpha); ctx.fill();
+  ctx.font = "650 " + ((current ? 11 : 9.5) / k) + "px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(String(n), px, py + 0.5 / k);
+}
+
+function drawNodes(k) {
+  const now = Date.now();
+  for (const n of NODES) {
+    const a = nodeAlpha(n);
+    if (a <= 0.02) continue;
+    const r = Math.max(n.r, 2.6 / k);
+    const col = nodeColor(n);
+
+    if (n.state !== "clean") {                    // status ring + halo
+      const sc = PAL.status[n.state];
+      if (n.state === "critical") {
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 8 / k, 0, 6.2832);
+        ctx.fillStyle = withAlpha(sc, 0.13 * a); ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 3.4 / k, 0, 6.2832);
+      ctx.strokeStyle = withAlpha(sc, a); ctx.lineWidth = 2 / k; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(n.x, n.y, r + 1.6 / k, 0, 6.2832);   // 2px surface ring
+    ctx.fillStyle = withAlpha(PAL.surface, a); ctx.fill();
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.2832);
+    ctx.fillStyle = withAlpha(col, a); ctx.fill();
+
+    if (HOP_NODES.has(n.id)) {
+      const pulse = 3 + Math.sin(now / 240) * 1.4;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + (6 + pulse) / k, 0, 6.2832);
+      ctx.strokeStyle = withAlpha(pathColor(selectedPath()), 0.75);
+      ctx.lineWidth = 2 / k; ctx.stroke();
+    }
+    if (S.matches.has(n.id) && S.query) {
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 / k, 0, 6.2832);
+      ctx.strokeStyle = PAL.series[0]; ctx.lineWidth = 1.8 / k; ctx.stroke();
+    }
+    if (n === S.selNode || n === S.hoverNode) {
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 8.5 / k, 0, 6.2832);
+      ctx.strokeStyle = PAL.ink1; ctx.lineWidth = (n === S.selNode ? 2 : 1.2) / k; ctx.stroke();
+    }
+    if (n.pinned && k > 0.6) {
+      ctx.beginPath(); ctx.arc(n.x + r * 0.78, n.y - r * 0.78, 2.2 / k, 0, 6.2832);
+      ctx.fillStyle = PAL.ink2; ctx.fill();
+    }
+  }
+}
+
+function labelRank(n) {
+  if (n === S.selNode) return 100;
+  if (n === S.hoverNode) return 90;
+  if (HOP_NODES.has(n.id)) return 80;
+  if (PATH_NODES.has(n.id)) return 70;
+  if (S.query && S.matches.has(n.id)) return 65;
+  if (n.state === "critical") return 60;
+  if (n.crit >= 4) return 50;
+  return 10 + Math.min(20, n.degree);
+}
+
+function labelRank(n) {
+  if (n === S.selNode) return 100;
+  if (n === S.hoverNode) return 90;
+  if (HOP_NODES.has(n.id)) return 80;
+  if (PATH_NODES.has(n.id)) return 70;
+  if (S.query && S.matches.has(n.id)) return 65;
+  if (n.state === "critical") return 60;
+  if (n.crit >= 4) return 50;
+  return 10 + Math.min(20, n.degree);
+}
+
+function drawLabels(k) {
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const size = 11 / k;
+  ctx.font = size + "px system-ui, -apple-system, sans-serif";
+  // Greedy screen-space packing: the labels that matter win the space, the
+  // rest yield rather than overprint. Every value stays reachable on hover,
+  // in the inspector and in the table view.
+  const drawn = [];
+  const order = NODES.slice().sort((a, b) => labelRank(b) - labelRank(a));
+  const budget = NODES.length > 700 ? 280 : 1200;
+  let placed = 0;
+  for (const n of order) {
+    const a = nodeAlpha(n);
+    if (a <= 0.2) continue;
+    if (placed >= budget) break;
+    const must = n === S.selNode || n === S.hoverNode || HOP_NODES.has(n.id);
+    const glyph = STATE_GLYPH[n.state];
+    const text = (glyph ? glyph + " " : "") + n.label;
+    const wWorld = ctx.measureText(text).width;
+    const yWorld = n.y + Math.max(n.r, 2.6 / k) + 5 / k;
+    const sx = (n.x - wWorld / 2) * k + S.view.x, sy = yWorld * k + S.view.y;
+    const sw = wWorld * k, sh = size * k + 3;
+    let clash = false;
+    for (let i = 0; i < drawn.length; i++) {
+      const r = drawn[i];
+      if (sx < r[2] && sx + sw > r[0] && sy < r[3] && sy + sh > r[1]) { clash = true; break; }
+    }
+    if (clash && !must) continue;
+    drawn.push([sx - 3, sy - 2, sx + sw + 3, sy + sh + 2]);
+    placed++;
+    ctx.fillStyle = withAlpha(PAL.surface, 0.74 * a);
+    ctx.fillRect(n.x - wWorld / 2 - 3 / k, yWorld - 1 / k, wWorld + 6 / k, size + 3 / k);
+    ctx.fillStyle = withAlpha(n.state === "clean" ? PAL.ink2 : PAL.status[n.state],
+                              Math.min(1, a + 0.15));
+    ctx.fillText(text, n.x, yWorld);
+  }
+}
+
+/* ---- animation loop --------------------------------------------------- */
+let needsRender = true;
+function invalidate() { needsRender = true; }
+function loop() {
+  ensureSize();
+  const moved = simulate();
+  // Auto-fit once the layout has settled, unless the analyst has already
+  // panned or zoomed - their view always wins.
+  if (S.needsFit && S.alpha < 0.02) fitView();
+  if (moved || needsRender || S.playing || S.selPath) { render(); needsRender = false; }
+  if (S.playing) advanceReplay();
+  requestAnimationFrame(loop);
+}
+
+/* ====================================================================== *
+ * Interaction: pointer, keyboard, tooltip
+ * ====================================================================== */
+
+const tip = $("tooltip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const r = tip.getBoundingClientRect();
+  tip.style.left = clamp(x + 14, 6, window.innerWidth - r.width - 8) + "px";
+  tip.style.top  = clamp(y + 14, 6, window.innerHeight - r.height - 8) + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+
+function hitNode(sx, sy) {
+  const p = toWorld(sx, sy);
+  let best = null, bestD = Infinity;
+  for (const n of NODES) {
+    if (nodeAlpha(n) <= 0.05) continue;
+    const d = Math.hypot(n.x - p[0], n.y - p[1]);
+    const rr = Math.max(n.r + 5, 13 / S.view.k);   // >= ~24px hit target
+    if (d < rr && d < bestD) { best = n; bestD = d; }
+  }
+  return best;
+}
+function hitLink(sx, sy) {
+  const p = toWorld(sx, sy), tol = 6 / S.view.k;
+  let best = null, bestD = tol;
+  for (const l of LINKS) {
+    if (Math.min(nodeAlpha(l.a), nodeAlpha(l.b)) <= 0.05) continue;
+    const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y;
+    const len2 = dx * dx + dy * dy || 1;
+    let t = ((p[0] - l.a.x) * dx + (p[1] - l.a.y) * dy) / len2;
+    t = clamp(t, 0, 1);
+    const d = Math.hypot(p[0] - (l.a.x + t * dx), p[1] - (l.a.y + t * dy));
+    if (d < bestD) { best = l; bestD = d; }
+  }
+  return best;
+}
+
+function nodeTip(n) {
+  const rows = [];
+  const g = STATE_GLYPH[n.state];
+  rows.push('<div class="tt-h"><span class="sw" style="width:9px;height:9px;border-radius:50%;' +
+    'display:inline-block;background:' + nodeColor(n) + '"></span>' + escapeHtml(n.label) + "</div>");
+  const add = (k, v) => { if (v) rows.push('<div class="tt-r"><b>' + k + "</b><span>" + v + "</span></div>"); };
+  add("State", (g ? g + " " : "") + DATA.vocab.stateLabels[n.state] +
+      (n.stateRaw && n.stateRaw.toLowerCase() !== n.state ? " (" + escapeHtml(n.stateRaw) + ")" : ""));
+  add("Zone", escapeHtml(n.zone));
+  add("Address", escapeHtml(n.ip));
+  add("Platform", escapeHtml([n.kind, n.os].filter(Boolean).join(" &middot; ")));
+  add("Criticality", DATA.vocab.critLabels[String(n.crit)]);
+  if (n.cves.length) add("Findings", n.cves.length + (n.kev ? " (known exploited)" : "") +
+      (n.maxCvss ? ", max CVSS " + n.maxCvss.toFixed(1) : ""));
+  if (n.paths.length) add("Attack paths", String(n.paths.length));
+  if (n.eventCount) add("Events", String(n.eventCount));
+  rows.push('<div class="tt-r" style="margin-top:5px;color:var(--muted)">Click to inspect &middot; drag to pin</div>');
+  return rows.join("");
+}
+function linkTip(l) {
+  const bits = [l.kind, l.protocol, l.port ? String(l.port) : "", l.bandwidth, l.notes]
+    .filter(Boolean).map(escapeHtml);
+  return '<div class="tt-h">' + escapeHtml(l.a.label) + " &harr; " + escapeHtml(l.b.label) + "</div>" +
+    (bits.length ? '<div class="tt-r"><span>' + bits.join(" &middot; ") + "</span></div>" : "");
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let down = null;
+cv.addEventListener("pointerdown", (e) => {
+  cv.setPointerCapture(e.pointerId);
+  const n = hitNode(e.offsetX, e.offsetY);
+  down = { x: e.offsetX, y: e.offsetY, moved: false, node: n,
+           vx: S.view.x, vy: S.view.y };
+  if (n) { S.dragging = n; n.pinned = true; }
+  else { S.panning = true; cv.style.cursor = "grabbing"; }
+});
+cv.addEventListener("pointermove", (e) => {
+  if (down) {
+    const dx = e.offsetX - down.x, dy = e.offsetY - down.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) down.moved = true;
+    if (S.dragging) {
+      const p = toWorld(e.offsetX, e.offsetY);
+      S.dragging.x = p[0]; S.dragging.y = p[1];
+      S.alpha = Math.max(S.alpha, 0.28);
+    } else if (S.panning) {
+      S.view.x = down.vx + dx; S.view.y = down.vy + dy;
+      S.needsFit = false;
+    }
+    invalidate(); hideTip();
+    return;
+  }
+  const n = hitNode(e.offsetX, e.offsetY);
+  const l = n ? null : hitLink(e.offsetX, e.offsetY);
+  if (n !== S.hoverNode || l !== S.hoverLink) { S.hoverNode = n; S.hoverLink = l; invalidate(); }
+  cv.style.cursor = n ? "pointer" : (l ? "crosshair" : "grab");
+  if (n) showTip(nodeTip(n), e.clientX, e.clientY);
+  else if (l) showTip(linkTip(l), e.clientX, e.clientY);
+  else hideTip();
+});
+function endDrag(e) {
+  if (!down) return;
+  if (!down.moved) {
+    const n = down.node;
+    if (n) selectNode(n);
+    else {
+      const l = hitLink(e.offsetX, e.offsetY);
+      if (l) { S.selLink = l; S.selNode = null; renderInspector(); }
+      else clearSelection();
+    }
+  }
+  S.dragging = null; S.panning = null; down = null;
+  cv.style.cursor = "grab";
+  invalidate();
+}
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", () => { S.dragging = null; S.panning = null; down = null; });
+cv.addEventListener("dblclick", (e) => {
+  const n = hitNode(e.offsetX, e.offsetY);
+  if (n) { n.pinned = false; S.alpha = Math.max(S.alpha, 0.4); invalidate(); }
+});
+cv.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016));
+  zoomAt(e.offsetX, e.offsetY, factor);
+}, { passive: false });
+cv.addEventListener("pointerleave", () => { hideTip(); S.hoverNode = null; S.hoverLink = null; invalidate(); });
+
+function zoomAt(sx, sy, factor) {
+  const k0 = S.view.k, k1 = clamp(k0 * factor, 0.06, 6);
+  S.view.x = sx - (sx - S.view.x) * (k1 / k0);
+  S.view.y = sy - (sy - S.view.y) * (k1 / k0);
+  S.view.k = k1; S.needsFit = false; invalidate();
+}
+
+function selectNode(n) {
+  S.selNode = n; S.selLink = null; S.selEvent = null;
+  recomputeEmphasis(); renderInspector(); invalidate();
+}
+function clearSelection() {
+  S.selNode = null; S.selLink = null; S.selEvent = null;
+  recomputeEmphasis(); renderInspector(); invalidate();
+}
+function selectPath(id) {
+  S.selPath = (S.selPath === id) ? null : id;
+  S.hop = -1;
+  recomputeEmphasis(); renderPaths(); renderInspector(); drawTimeline(); invalidate();
+  const p = selectedPath();
+  if (p) fitView(p.nodes.map(x => BYID.get(x)).filter(Boolean));
+}
+function setHop(i) {
+  const p = selectedPath(); if (!p) return;
+  S.hop = clamp(i, -1, p._steps.length - 1);
+  const st = p._steps[S.hop];
+  if (st && st.raw.ts != null) { S.cursor = st.raw.ts; }
+  recomputeActive(); recomputeEmphasis(); renderPaths(); drawTimeline(); invalidate();
+  if (st && st.to) {
+    const focus = [st.from, st.to].filter(Boolean);
+    if (focus.length) fitView(focus.concat(focus.flatMap(n => (ADJ.get(n.id) || []).map(a => a.node))));
+  }
+}
+
+/* ====================================================================== *
+ * Left panel + inspector
+ * ====================================================================== */
+
+function renderTiles() {
+  const st = DATA.stats, box = $("tiles"); box.innerHTML = "";
+  const owned = st.byState.critical || 0, susp = st.byState.serious || 0;
+  const tiles = [
+    { k: "Assets", v: st.nodes, sub: st.links + " links &middot; " + st.zones + " zones" },
+    { k: "Compromised", v: owned, alert: owned > 0,
+      sub: susp + " suspected &middot; " + (st.byState.warning || 0) + " vulnerable" },
+    { k: "Attack paths", v: st.paths,
+      sub: (st.byPathSeverity.critical || 0) + " critical &middot; " +
+           (st.byPathSeverity.serious || 0) + " high" },
+    { k: "Findings", v: st.cves, alert: st.kev > 0,
+      sub: st.kev + " known exploited &middot; " + st.crownJewels + " crown jewels" },
+  ];
+  tiles.forEach(t => {
+    const d = el("div", "tile" + (t.alert ? " alert" : ""));
+    d.appendChild(el("div", "k", t.k));
+    d.appendChild(el("div", "v", String(t.v)));
+    const s = el("div", "sub"); s.innerHTML = t.sub; d.appendChild(s);
+    box.appendChild(d);
+  });
+  const wbox = $("warnings"); wbox.innerHTML = "";
+  if (DATA.warnings && DATA.warnings.length) {
+    const w = el("div", "warnbox");
+    w.innerHTML = "<b>Input notes</b><ul>" +
+      DATA.warnings.map(x => "<li>" + escapeHtml(x) + "</li>").join("") + "</ul>";
+    wbox.appendChild(w);
+  }
+}
+
+function chip(label, count, color, active, onClick, glyph, round) {
+  const c = el("button", "chip" + (active ? "" : " off"));
+  if (glyph) { const g = el("span", "gl", glyph); g.style.color = color; c.appendChild(g); }
+  else if (color) { const sw = el("span", "sw" + (round ? " round" : "")); sw.style.background = color; c.appendChild(sw); }
+  c.appendChild(el("span", null, label));
+  if (count != null) c.appendChild(el("span", "n", String(count)));
+  c.setAttribute("aria-pressed", String(active));
+  c.onclick = onClick;
+  return c;
+}
+
+function renderChips() {
+  const zc = $("zone-chips"); zc.innerHTML = "";
+  DATA.zones.forEach(z => {
+    const col = z.slot < 0 ? PAL.other : PAL.series[z.slot];
+    zc.appendChild(chip(z.label, DATA.stats.byZone[z.id] || 0, col, !S.zonesOff.has(z.id),
+      () => { S.zonesOff.has(z.id) ? S.zonesOff.delete(z.id) : S.zonesOff.add(z.id);
+              renderChips(); invalidate(); }));
+  });
+  const sc = $("state-chips"); sc.innerHTML = "";
+  DATA.vocab.stateOrder.forEach(k => {
+    const n = DATA.stats.byState[k] || 0;
+    sc.appendChild(chip(DATA.vocab.stateLabels[k], n, PAL.status[k], !S.statesOff.has(k),
+      () => { S.statesOff.has(k) ? S.statesOff.delete(k) : S.statesOff.add(k);
+              renderChips(); invalidate(); }, STATE_GLYPH[k] || "○"));
+  });
+  const cc = $("crit-chips"); cc.innerHTML = "";
+  [4, 3, 2, 1].forEach(lvl => {
+    const n = NODES.filter(x => x.crit === lvl).length;
+    cc.appendChild(chip(DATA.vocab.critLabels[String(lvl)], n, PAL.seq[lvl - 1],
+      !S.critsOff.has(String(lvl)),
+      () => { const key = String(lvl);
+              S.critsOff.has(key) ? S.critsOff.delete(key) : S.critsOff.add(key);
+              renderChips(); invalidate(); }, null, true));
+  });
+}
+
+function renderPaths() {
+  const box = $("paths"); box.innerHTML = "";
+  $("path-hint").textContent = DATA.paths.length ? "click to trace" : "";
+  if (!DATA.paths.length) {
+    const e = el("div", null);
+    e.style.cssText = "font-size:11.5px;color:var(--muted)";
+    e.innerHTML = "No attack paths loaded. Pass <code>--attacks paths.json</code>.";
+    box.appendChild(e); return;
+  }
+  DATA.paths.forEach(p => {
+    const card = el("div", "pcard" + (p.id === S.selPath ? " sel" : ""));
+    card.style.setProperty("--pc", pathColor(p));
+    const top = el("div", "ptop");
+    const b = el("span", "badge " + p.severity);
+    b.innerHTML = '<span class="gl">' + SEV_GLYPH[p.severity] + "</span>" +
+                  DATA.vocab.severityLabels[p.severity];
+    top.appendChild(b);
+    if (p.status) top.appendChild(el("span", "badge clean", p.status));
+    card.appendChild(top);
+    card.appendChild(el("div", "pname", p.name));
+    const meta = el("div", "pmeta");
+    meta.appendChild(el("span", null, p.steps.length + " hops"));
+    if (p.actor) meta.appendChild(el("span", null, p.actor));
+    if (p.score != null) meta.appendChild(el("span", null, "score " + p.score));
+    if (p.missing && p.missing.length)
+      meta.appendChild(el("span", null, p.missing.length + " unknown node(s)"));
+    card.appendChild(meta);
+    card.onclick = () => selectPath(p.id);
+
+    if (p.id === S.selPath) {
+      const steps = el("div", "steps");
+      const bar = el("div", "stepper");
+      const mk = (txt, fn, title) => { const b2 = el("button", "mini", txt); b2.onclick = (ev) => { ev.stopPropagation(); fn(); }; if (title) b2.title = title; return b2; };
+      bar.appendChild(mk("◀", () => setHop(S.hop - 1), "Previous hop"));
+      bar.appendChild(mk("▶", () => setHop(S.hop + 1), "Next hop"));
+      bar.appendChild(mk("Whole path", () => { S.hop = -1; S.cursor = null;
+        recomputeActive(); recomputeEmphasis(); renderPaths(); drawTimeline(); invalidate(); }));
+      const pos = el("span", "pos", S.hop < 0 ? "all hops" : "hop " + (S.hop + 1) + " / " + p._steps.length);
+      bar.appendChild(pos);
+      steps.appendChild(bar);
+      p._steps.forEach((st, i) => {
+        const row = el("div", "hop" + (i === S.hop ? " cur" : ""));
+        row.appendChild(el("div", "num", String(i + 1)));
+        const body = el("div");
+        const t = el("div", "ht");
+        const fromLabel = st.from ? st.from.label : (st.raw.from || "?");
+        const toLabel = st.to ? st.to.label : st.raw.to;
+        t.innerHTML = escapeHtml(fromLabel) + " → <b>" + escapeHtml(toLabel) + "</b>" +
+          (st.raw.technique ? '<span class="tt">' + escapeHtml(st.raw.technique) + "</span>" : "") +
+          (st.physical ? "" : '<span class="tt">no direct link</span>');
+        body.appendChild(t);
+        const sub = [st.raw.title, st.raw.tactic, st.raw.detail].filter(Boolean).join(" · ");
+        if (sub) body.appendChild(el("div", "hs", sub));
+        if (st.raw.ts) body.appendChild(el("div", "hs", fmtTime(st.raw.ts, true)));
+        row.appendChild(body);
+        row.onclick = (ev) => { ev.stopPropagation(); setHop(i); renderPaths(); };
+        steps.appendChild(row);
+      });
+      card.appendChild(steps);
+    }
+    box.appendChild(card);
+  });
+}
+
+function renderInspector() {
+  const box = $("right");
+  box.innerHTML = "";
+  if (S.selNode) return inspectNode(box, S.selNode);
+  if (S.selLink) return inspectLink(box, S.selLink);
+  const p = selectedPath();
+  if (p) return inspectPath(box, p);
+  return inspectOverview(box);
+}
+
+function sec(title, hint) {
+  const s = el("div", "sec");
+  if (title) {
+    const h = el("h2", null, title);
+    if (hint) { const sp = el("span", "hint", hint); h.appendChild(sp); }
+    s.appendChild(h);
+  }
+  return s;
+}
+function kvBlock(pairs) {
+  const dl = el("dl", "kv");
+  pairs.forEach(([k, v]) => {
+    if (v == null || v === "") return;
+    dl.appendChild(el("dt", null, k));
+    const dd = el("dd"); dd.innerHTML = v; dl.appendChild(dd);
+  });
+  return dl;
+}
+function table(head, rows) {
+  const t = el("table", "tbl");
+  const tr = el("tr");
+  head.forEach(h => { const th = el("th", h.num ? "num" : null, h.label || h); tr.appendChild(th); });
+  t.appendChild(el("thead")).appendChild(tr);
+  const tb = el("tbody");
+  rows.forEach(r => {
+    const row = el("tr");
+    r.forEach((c, i) => { const td = el("td", head[i] && head[i].num ? "num" : null);
+      td.innerHTML = c == null ? "" : c; row.appendChild(td); });
+    tb.appendChild(row);
+  });
+  t.appendChild(tb);
+  return t;
+}
+
+function inspectNode(box, n) {
+  const head = el("div", "insp-head");
+  const ih = el("div", "ih");
+  const title = el("div");
+  title.appendChild(el("h1", null, n.label));
+  const sub = el("div", "sub");
+  sub.innerHTML = escapeHtml([n.ip, n.kind, n.zone].filter(Boolean).join("  ·  "));
+  title.appendChild(sub);
+  ih.appendChild(title);
+  const close = el("button", "close", "✕"); close.title = "Close (Esc)";
+  close.onclick = clearSelection; ih.appendChild(close);
+  head.appendChild(ih);
+  const badges = el("div"); badges.style.cssText = "margin-top:8px;display:flex;gap:5px;flex-wrap:wrap";
+  const sb = el("span", "badge " + (n.state === "clean" ? "clean" : n.state));
+  sb.innerHTML = '<span class="gl">' + (STATE_GLYPH[n.state] || "○") + "</span>" +
+                 DATA.vocab.stateLabels[n.state];
+  badges.appendChild(sb);
+  badges.appendChild(el("span", "badge clean", DATA.vocab.critLabels[String(n.crit)] + " value"));
+  if (n.kev) badges.appendChild(el("span", "badge critical", "Known exploited"));
+  if (n.paths.length) badges.appendChild(el("span", "badge serious", n.paths.length + " attack path" + (n.paths.length > 1 ? "s" : "")));
+  head.appendChild(badges);
+  box.appendChild(head);
+
+  const facts = sec("Asset");
+  facts.appendChild(kvBlock([
+    ["Node id", escapeHtml(n.id)],
+    ["Address", escapeHtml(n.ip)], ["MAC", escapeHtml(n.mac)],
+    ["Platform", escapeHtml(n.os)], ["Owner", escapeHtml(n.owner)],
+    ["Links", String(n.degree)],
+    ["Choke point", n.choke ? (n.choke * 100).toFixed(1) + "% of shortest paths" : null],
+    ["Events", n.eventCount ? String(n.eventCount) : null],
+    ["Tags", n.tags.length ? escapeHtml(n.tags.join(", ")) : null],
+    ["Notes", escapeHtml(n.notes)],
+  ]));
+  Object.keys(n.attrs || {}).forEach(k => {
+    facts.appendChild(kvBlock([[escapeHtml(k), escapeHtml(String(n.attrs[k]))]]));
+  });
+  box.appendChild(facts);
+
+  if (n.services.length) {
+    const s = sec("Listening services", n.services.length + "");
+    s.appendChild(table([{ label: "Port", num: true }, "Proto", "Service"],
+      n.services.map(x => [x.port == null ? "" : x.port, escapeHtml(x.proto),
+        escapeHtml([x.name, x.version].filter(Boolean).join(" "))])));
+    box.appendChild(s);
+  }
+  if (n.cves.length) {
+    const s = sec("Findings", n.cves.length + "");
+    s.appendChild(table(["ID", { label: "CVSS", num: true }, "Severity"],
+      n.cves.map(c => [escapeHtml(c.id) + (c.exploited ? ' <span class="badge critical">KEV</span>' : ""),
+        c.cvss == null ? "" : c.cvss.toFixed(1),
+        '<span class="badge ' + c.severity + '"><span class="gl">' + SEV_GLYPH[c.severity] +
+        "</span>" + DATA.vocab.severityLabels[c.severity] + "</span>"])));
+    box.appendChild(s);
+  }
+  if (n.paths.length) {
+    const s = sec("On these attack paths");
+    const list = el("div", "linklist");
+    n.paths.forEach(pid => {
+      const p = DATA.paths.find(x => x.id === pid); if (!p) return;
+      const b = el("button", "nlink");
+      b.innerHTML = '<span class="sw" style="background:' + pathColor(p) + '"></span>' + escapeHtml(p.name);
+      b.onclick = () => selectPath(p.id);
+      list.appendChild(b);
+    });
+    s.appendChild(list); box.appendChild(s);
+  }
+  const evs = DATA.events.filter(e => e.nodes.includes(n.id));
+  if (evs.length) {
+    const s = sec("Timeline for this host", evs.length + " events");
+    evs.slice(0, 40).forEach(e => s.appendChild(eventRow(e)));
+    box.appendChild(s);
+  }
+  const nbs = ADJ.get(n.id) || [];
+  const s2 = sec("Adjacent (" + nbs.length + ")");
+  const list = el("div", "linklist");
+  nbs.slice(0, 80).forEach(nb => {
+    const b = el("button", "nlink");
+    b.innerHTML = '<span class="sw" style="background:' + nodeColor(nb.node) + '"></span>' +
+      escapeHtml(nb.node.label) + (nb.link.label ? ' <span style="color:var(--muted)">' +
+      escapeHtml(nb.link.label) + "</span>" : "");
+    b.onclick = () => { selectNode(nb.node); fitView([nb.node, n]); };
+    list.appendChild(b);
+  });
+  s2.appendChild(list);
+  const blast = el("label", "toggle");
+  blast.style.marginTop = "9px";
+  blast.innerHTML = '<span style="min-width:96px">Blast radius <b id="blast-v">' + S.blast + "</b> hop(s)</span>";
+  const range = el("input", "slider"); range.type = "range"; range.min = "0"; range.max = "5";
+  range.value = String(S.blast);
+  range.oninput = () => { S.blast = +range.value; $("blast-v").textContent = S.blast;
+    recomputeEmphasis(); invalidate(); };
+  blast.appendChild(range);
+  s2.appendChild(blast);
+  if (S.blast > 0) {
+    const reach = [...BLAST.entries()].filter(([, d]) => d > 0);
+    s2.appendChild(el("div", null, reach.length + " asset(s) reachable within " + S.blast + " hop(s)"))
+      .style.cssText = "font-size:11px;color:var(--muted);margin-top:4px";
+  }
+  box.appendChild(s2);
+}
+
+function eventRow(e) {
+  const row = el("div", "evrow");
+  row.appendChild(el("div", "t", fmtTime(e.ts)));
+  const d = el("div");
+  const head = el("div", "d");
+  head.innerHTML = '<span class="badge ' + e.severity + '" style="margin-right:5px"><span class="gl">' +
+    SEV_GLYPH[e.severity] + "</span>" + DATA.vocab.severityLabels[e.severity] + "</span>" +
+    escapeHtml(e.title);
+  d.appendChild(head);
+  const meta = [e.phase, e.technique, e.source].filter(Boolean).join(" · ");
+  if (meta) d.appendChild(el("div", "m", meta));
+  row.appendChild(d);
+  row.onclick = () => focusEvent(e);
+  return row;
+}
+
+function inspectLink(box, l) {
+  const head = el("div", "insp-head");
+  const ih = el("div", "ih");
+  const t = el("div");
+  t.appendChild(el("h1", null, l.a.label + "  ↔  " + l.b.label));
+  t.appendChild(el("div", "sub", l.kind || "link"));
+  ih.appendChild(t);
+  const close = el("button", "close", "✕"); close.onclick = clearSelection; ih.appendChild(close);
+  head.appendChild(ih); box.appendChild(head);
+  const s = sec("Link");
+  s.appendChild(kvBlock([
+    ["Protocol", escapeHtml(l.protocol)], ["Port", l.port == null ? null : String(l.port)],
+    ["Bandwidth", escapeHtml(l.bandwidth)], ["Trust", escapeHtml(l.trust)],
+    ["Notes", escapeHtml(l.notes)],
+  ]));
+  const list = el("div", "linklist"); list.style.marginTop = "8px";
+  [l.a, l.b].forEach(n => {
+    const b = el("button", "nlink");
+    b.innerHTML = '<span class="sw" style="background:' + nodeColor(n) + '"></span>' + escapeHtml(n.label);
+    b.onclick = () => selectNode(n);
+    list.appendChild(b);
+  });
+  s.appendChild(list);
+  box.appendChild(s);
+}
+
+function inspectPath(box, p) {
+  const head = el("div", "insp-head");
+  const ih = el("div", "ih");
+  const t = el("div");
+  t.appendChild(el("h1", null, p.name));
+  t.appendChild(el("div", "sub", p.steps.length + " hops · " +
+    (p.start ? fmtTime(p.start, true) : "no timestamps")));
+  ih.appendChild(t);
+  const close = el("button", "close", "✕");
+  close.onclick = () => selectPath(p.id); ih.appendChild(close);
+  head.appendChild(ih); box.appendChild(head);
+  const s = sec("Attack path");
+  s.appendChild(kvBlock([
+    ["Severity", '<span class="badge ' + p.severity + '"><span class="gl">' + SEV_GLYPH[p.severity] +
+      "</span>" + DATA.vocab.severityLabels[p.severity] + "</span>"],
+    ["Status", escapeHtml(p.status)], ["Actor", escapeHtml(p.actor)],
+    ["Objective", escapeHtml(p.objective)], ["Score", p.score == null ? null : String(p.score)],
+    ["Narrative", escapeHtml(p.description)],
+  ]));
+  if (p.missing && p.missing.length) {
+    const w = el("div", "warnbox");
+    w.innerHTML = "<b>Unresolved nodes</b><div>" + escapeHtml(p.missing.join(", ")) +
+      " — present in the attack file but not in the topology.</div>";
+    s.appendChild(w);
+  }
+  box.appendChild(s);
+  const evs = DATA.events.filter(e => e.path === p.id);
+  if (evs.length) {
+    const s2 = sec("Detections mapped to this path", evs.length + "");
+    evs.forEach(e => s2.appendChild(eventRow(e)));
+    box.appendChild(s2);
+  }
+}
+
+function inspectOverview(box) {
+  const head = el("div", "insp-head");
+  head.innerHTML = "<h1>" + escapeHtml(DATA.title) + '</h1><div class="sub">' +
+    DATA.stats.nodes + " assets · " + DATA.stats.links + " links · generated " +
+    escapeHtml(DATA.generated) + "</div>";
+  box.appendChild(head);
+  const s = sec("Getting around");
+  const g = el("div", "help-grid");
+  [["click", "inspect an asset"], ["drag", "pin an asset in place"], ["double-click", "unpin"],
+   ["scroll", "zoom"], ["<kbd>/</kbd>", "search"], ["<kbd>F</kbd>", "fit to view"],
+   ["<kbd>L</kbd>", "cycle layout"], ["<kbd>T</kbd>", "table view"],
+   ["<kbd>Space</kbd>", "replay the timeline"], ["<kbd>&larr;</kbd> <kbd>&rarr;</kbd>", "step attack hops"],
+   ["<kbd>Esc</kbd>", "clear selection"]].forEach(([a, b]) => {
+    const k = el("div"); k.innerHTML = a.startsWith("<") ? a : "<kbd>" + a + "</kbd>";
+    g.appendChild(k); g.appendChild(el("div", null, b));
+  });
+  s.appendChild(g);
+  box.appendChild(s);
+  if (DATA.paths.length) {
+    const s2 = sec("Attack paths");
+    s2.appendChild(el("div", null, "Select a path on the left to trace it hop by hop across the map."))
+      .style.cssText = "font-size:11.5px;color:var(--text-2)";
+    box.appendChild(s2);
+  }
+  const s3 = sec("Sources");
+  DATA.sources.forEach(src => {
+    const d = el("div"); d.style.cssText = "font-size:11px;color:var(--text-2);margin-bottom:3px";
+    d.innerHTML = '<span style="color:var(--muted)">' + src.role + "</span> " + escapeHtml(src.path);
+    s3.appendChild(d);
+  });
+  box.appendChild(s3);
+}
+
+/* ====================================================================== *
+ * Timeline, replay, legend, HUD
+ * ====================================================================== */
+
+const tlc = $("timeline"), tctx = tlc.getContext("2d");
+const TL = { gutter: 126, padTop: 20, laneH: 22, brushH: 30, axisH: 16, lanes: [],
+             x0: 0, x1: 0, focus: [0, 0], full: [0, 0], w: 0, h: 0, laneTop: 0,
+             brushTop: 0, dots: [], drag: null };
+
+function fmtTime(ts, withDate) {
+  if (ts == null) return "";
+  const d = new Date(ts);
+  const p = (v) => String(v).padStart(2, "0");
+  const clock = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  if (!withDate) return clock;
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + clock;
+}
+function fmtSpan(a, b) {
+  const ms = Math.max(0, b - a);
+  if (ms < 90000) return Math.round(ms / 1000) + "s";
+  if (ms < 5400000) return (ms / 60000).toFixed(ms < 600000 ? 1 : 0) + " min";
+  if (ms < 172800000) return (ms / 3600000).toFixed(1) + " h";
+  return (ms / 86400000).toFixed(1) + " d";
+}
+
+function timelineRange() {
+  const ts = DATA.events.map(e => e.ts);
+  if (!ts.length) return null;
+  let a = Math.min(...ts), b = Math.max(...ts);
+  if (a === b) { a -= 60000; b += 60000; }
+  const pad = (b - a) * 0.03;
+  return [a - pad, b + pad];
+}
+
+function layoutTimeline() {
+  const wrap = $("tl-body");
+  const width = wrap.clientWidth || tlc.parentElement.clientWidth || 900;
+  const phases = [...new Set(DATA.events.map(e => e.phase))]
+    .map(p => ({ id: p, rank: (DATA.events.find(e => e.phase === p) || {}).phaseRank || 50 }))
+    .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
+  TL.lanes = phases.map(p => p.id);
+  const maxLaneArea = 190;
+  TL.laneH = TL.lanes.length ? clamp(maxLaneArea / TL.lanes.length, 15, 26) : 0;
+  TL.h = TL.padTop + TL.lanes.length * TL.laneH + 10 + TL.brushH + TL.axisH + 6;
+  TL.w = width;
+  TL.x0 = TL.gutter; TL.x1 = width - 16;
+  TL.laneTop = TL.padTop;
+  TL.brushTop = TL.padTop + TL.lanes.length * TL.laneH + 10;
+  tlc.width = Math.max(1, Math.round(width * DPR));
+  tlc.height = Math.max(1, Math.round(TL.h * DPR));
+  tlc.style.width = width + "px"; tlc.style.height = TL.h + "px";
+}
+
+const xFull  = (ts) => TL.x0 + (ts - TL.full[0]) / Math.max(1, TL.full[1] - TL.full[0]) * (TL.x1 - TL.x0);
+const xFocus = (ts) => TL.x0 + (ts - TL.focus[0]) / Math.max(1, TL.focus[1] - TL.focus[0]) * (TL.x1 - TL.x0);
+const tFromFull = (x) => TL.full[0] + (x - TL.x0) / Math.max(1, TL.x1 - TL.x0) * (TL.full[1] - TL.full[0]);
+
+function fmtTick(ts, step) {
+  const d = new Date(ts), p = (v) => String(v).padStart(2, "0");
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  if (step >= 86400e3) return MON[d.getMonth()] + " " + d.getDate();
+  if (step >= 3600e3 * 6) return MON[d.getMonth()] + " " + d.getDate() + " " + p(d.getHours()) + "h";
+  if (step >= 60e3) return p(d.getHours()) + ":" + p(d.getMinutes());
+  return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+
+function niceTicks(a, b, target) {
+  const span = b - a, steps = [1e3, 5e3, 15e3, 30e3, 60e3, 300e3, 900e3, 1800e3, 3600e3,
+    7200e3, 21600e3, 43200e3, 86400e3, 604800e3];
+  let step = steps[steps.length - 1];
+  for (const s of steps) if (span / s <= target) { step = s; break; }
+  const out = [];
+  for (let t = Math.ceil(a / step) * step; t <= b; t += step) out.push(t);
+  out.step = step;
+  return out;
+}
+
+function drawTimeline() {
+  const range = timelineRange();
+  $("tl-empty").style.display = range ? "none" : "block";
+  tlc.style.display = range ? "block" : "none";
+  if (!range) { $("tl-clock").textContent = "—"; return; }
+  layoutTimeline();
+  TL.full = range;
+  TL.focus = S.win ? S.win.slice() : range.slice();
+
+  tctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  tctx.clearRect(0, 0, TL.w, TL.h);
+  tctx.font = "10px system-ui, -apple-system, sans-serif";
+  tctx.textBaseline = "middle";
+
+  // lanes
+  TL.lanes.forEach((lane, i) => {
+    const y = TL.laneTop + i * TL.laneH + TL.laneH / 2;
+    tctx.strokeStyle = PAL.grid; tctx.lineWidth = 1;
+    tctx.beginPath(); tctx.moveTo(TL.x0, Math.round(y) + 0.5); tctx.lineTo(TL.x1, Math.round(y) + 0.5);
+    tctx.stroke();
+    tctx.fillStyle = PAL.muted; tctx.textAlign = "right";
+    let text = lane;
+    while (tctx.measureText(text).width > TL.gutter - 14 && text.length > 4)
+      text = text.slice(0, -2);
+    tctx.fillText(text === lane ? lane : text + "…", TL.gutter - 10, y);
+  });
+
+  // time axis across the focus area
+  tctx.textAlign = "center";
+  const ticks = niceTicks(TL.focus[0], TL.focus[1], 8);
+  ticks.forEach(t => {
+    const x = xFocus(t);
+    if (x < TL.x0 - 1 || x > TL.x1 + 1) return;
+    tctx.strokeStyle = PAL.grid; tctx.lineWidth = 1;
+    tctx.beginPath(); tctx.moveTo(Math.round(x) + 0.5, TL.padTop - 4);
+    tctx.lineTo(Math.round(x) + 0.5, TL.brushTop - 12); tctx.stroke();
+    tctx.fillStyle = PAL.muted;
+    tctx.fillText(fmtTick(t, ticks.step), x, 9);
+  });
+
+  // event marks
+  TL.dots = [];
+  const sel = selectedPath();
+  DATA.events.forEach(e => {
+    const laneIndex = TL.lanes.indexOf(e.phase);
+    if (laneIndex < 0) return;
+    const x = xFocus(e.ts);
+    if (x < TL.x0 - 6 || x > TL.x1 + 6) return;
+    const y = TL.laneTop + laneIndex * TL.laneH + TL.laneH / 2;
+    let a = 1;
+    if (sel && e.path !== sel.id) a = 0.25;
+    if (S.cursor != null && e.ts > S.cursor) a = Math.min(a, 0.12);
+    if (S.selNode && !e.nodes.includes(S.selNode.id)) a = Math.min(a, 0.3);
+    const r = e === S.selEvent ? 6 : 4.6;
+    tctx.beginPath(); tctx.arc(x, y, r + 2, 0, 6.2832);
+    tctx.fillStyle = withAlpha(PAL.panel, a); tctx.fill();     // 2px surface ring
+    tctx.beginPath(); tctx.arc(x, y, r, 0, 6.2832);
+    tctx.fillStyle = withAlpha(PAL.status[e.severity], a); tctx.fill();
+    if (e === S.selEvent) {
+      tctx.beginPath(); tctx.arc(x, y, r + 4, 0, 6.2832);
+      tctx.strokeStyle = PAL.ink1; tctx.lineWidth = 1.5; tctx.stroke();
+    }
+    TL.dots.push({ x, y, e, r: Math.max(9, r + 4) });
+  });
+
+  // playhead
+  if (S.cursor != null) {
+    const x = xFocus(S.cursor);
+    tctx.strokeStyle = PAL.ink1; tctx.lineWidth = 1.5;
+    tctx.beginPath(); tctx.moveTo(x, TL.padTop - 8); tctx.lineTo(x, TL.brushTop - 12); tctx.stroke();
+    tctx.beginPath(); tctx.moveTo(x - 4, TL.padTop - 8); tctx.lineTo(x + 4, TL.padTop - 8);
+    tctx.lineTo(x, TL.padTop - 2); tctx.closePath(); tctx.fillStyle = PAL.ink1; tctx.fill();
+  }
+
+  // context strip: event density over the whole capture, one hue, plus the window
+  const bins = 90, counts = new Array(bins).fill(0);
+  DATA.events.forEach(e => {
+    const i = clamp(Math.floor((e.ts - TL.full[0]) / Math.max(1, TL.full[1] - TL.full[0]) * bins), 0, bins - 1);
+    counts[i]++;
+  });
+  const maxC = Math.max(1, ...counts);
+  const bw = (TL.x1 - TL.x0) / bins;
+  tctx.fillStyle = PAL.seq[2];
+  counts.forEach((c, i) => {
+    if (!c) return;
+    const hgt = Math.max(2, (c / maxC) * (TL.brushH - 6));
+    tctx.fillRect(TL.x0 + i * bw + 0.6, TL.brushTop + TL.brushH - hgt, Math.max(1, bw - 1.2), hgt);
+  });
+  tctx.strokeStyle = PAL.axis; tctx.lineWidth = 1;
+  tctx.beginPath(); tctx.moveTo(TL.x0, TL.brushTop + TL.brushH + 0.5);
+  tctx.lineTo(TL.x1, TL.brushTop + TL.brushH + 0.5); tctx.stroke();
+  tctx.fillStyle = PAL.muted; tctx.textAlign = "left";
+  tctx.fillText(fmtTime(TL.full[0], true), TL.x0, TL.brushTop + TL.brushH + 10);
+  tctx.textAlign = "right";
+  tctx.fillText(fmtTime(TL.full[1], true), TL.x1, TL.brushTop + TL.brushH + 10);
+  tctx.textAlign = "right"; tctx.fillStyle = PAL.muted;
+  tctx.fillText("select window", TL.gutter - 10, TL.brushTop + TL.brushH / 2);
+
+  if (S.win) {
+    const a = xFull(S.win[0]), b = xFull(S.win[1]);
+    tctx.fillStyle = withAlpha(PAL.series[0], 0.16);
+    tctx.fillRect(a, TL.brushTop - 2, b - a, TL.brushH + 4);
+    tctx.strokeStyle = PAL.series[0]; tctx.lineWidth = 1.5;
+    tctx.strokeRect(a, TL.brushTop - 2, b - a, TL.brushH + 4);
+  }
+
+  const clock = S.cursor != null ? fmtTime(S.cursor, true)
+    : (S.win ? fmtTime(S.win[0]) + " – " + fmtTime(S.win[1]) : fmtSpan(range[0], range[1]) + " total");
+  $("tl-clock").textContent = clock;
+  renderTimelineLegend();
+  renderHud();
+}
+
+function renderTimelineLegend() {
+  const box = $("tl-legend");
+  if (box.dataset.done === "1") return;
+  box.innerHTML = "";
+  ["critical", "serious", "warning", "good"].forEach(k => {
+    const s = el("span", "li");
+    s.innerHTML = '<i style="background:' + PAL.status[k] + '"></i>' + SEV_GLYPH[k] + " " +
+      DATA.vocab.severityLabels[k];
+    box.appendChild(s);
+  });
+  box.dataset.done = "1";
+}
+
+/* ---- timeline pointer ------------------------------------------------- */
+tlc.addEventListener("pointerdown", (e) => {
+  const r = tlc.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (y >= TL.brushTop - 4 && y <= TL.brushTop + TL.brushH + 6) {
+    tlc.setPointerCapture(e.pointerId);
+    TL.drag = { x0: clamp(x, TL.x0, TL.x1), moved: false };
+  }
+});
+tlc.addEventListener("pointermove", (e) => {
+  const r = tlc.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (TL.drag) {
+    const x1 = clamp(x, TL.x0, TL.x1);
+    if (Math.abs(x1 - TL.drag.x0) > 3) {
+      TL.drag.moved = true;
+      const a = tFromFull(Math.min(TL.drag.x0, x1)), b = tFromFull(Math.max(TL.drag.x0, x1));
+      S.win = [a, b]; S.cursor = null;
+      recomputeActive(); drawTimeline(); invalidate();
+    }
+    return;
+  }
+  const hit = TL.dots.find(d => Math.hypot(d.x - x, d.y - y) < d.r);
+  if (hit) {
+    tlc.style.cursor = "pointer";
+    const e2 = hit.e;
+    showTip('<div class="tt-h"><span class="badge ' + e2.severity + '"><span class="gl">' +
+      SEV_GLYPH[e2.severity] + "</span>" + DATA.vocab.severityLabels[e2.severity] + "</span> " +
+      escapeHtml(e2.title) + "</div>" +
+      '<div class="tt-r"><b>Time</b><span>' + fmtTime(e2.ts, true) + "</span></div>" +
+      '<div class="tt-r"><b>Phase</b><span>' + escapeHtml(e2.phase) + "</span></div>" +
+      (e2.nodes.length ? '<div class="tt-r"><b>Assets</b><span>' +
+        escapeHtml(e2.nodes.map(id => (BYID.get(id) || {}).label || id).join(", ")) + "</span></div>" : "") +
+      (e2.technique ? '<div class="tt-r"><b>Technique</b><span>' + escapeHtml(e2.technique) + "</span></div>" : "") +
+      (e2.source ? '<div class="tt-r"><b>Source</b><span>' + escapeHtml(e2.source) + "</span></div>" : "") +
+      (e2.detail ? '<div class="tt-r" style="display:block;margin-top:4px;color:var(--text-2)">' +
+        escapeHtml(e2.detail) + "</div>" : ""), e.clientX, e.clientY);
+  } else {
+    tlc.style.cursor = (y >= TL.brushTop - 4 && y <= TL.brushTop + TL.brushH + 6) ? "ew-resize" : "default";
+    hideTip();
+  }
+});
+tlc.addEventListener("pointerup", (e) => {
+  const r = tlc.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (TL.drag) {
+    if (!TL.drag.moved) { S.win = null; recomputeActive(); drawTimeline(); invalidate(); }
+    TL.drag = null; return;
+  }
+  const hit = TL.dots.find(d => Math.hypot(d.x - x, d.y - y) < d.r);
+  if (hit) focusEvent(hit.e);
+});
+tlc.addEventListener("pointerleave", () => hideTip());
+
+function focusEvent(e) {
+  S.selEvent = e;
+  S.cursor = e.ts;
+  if (e.path && e.path !== S.selPath) { S.selPath = e.path; S.hop = e.step != null ? e.step : -1; }
+  const ns = e._nodes && e._nodes.length ? e._nodes : e.nodes.map(id => BYID.get(id)).filter(Boolean);
+  if (ns.length) { S.selNode = ns[0]; fitView(ns.concat(ns.flatMap(n => (ADJ.get(n.id) || []).map(a => a.node)))); }
+  recomputeActive(); recomputeEmphasis(); renderPaths(); renderInspector(); drawTimeline(); invalidate();
+}
+
+/* ---- replay ---------------------------------------------------------- */
+let lastFrame = 0;
+function advanceReplay() {
+  const range = timelineRange(); if (!range) { S.playing = false; return; }
+  const span = (S.win || range);
+  const now = performance.now();
+  const dt = lastFrame ? Math.min(120, now - lastFrame) : 16;
+  lastFrame = now;
+  const duration = 22000 / S.speed;
+  if (S.cursor == null) S.cursor = span[0];
+  S.cursor += (span[1] - span[0]) * (dt / duration);
+  if (S.cursor >= span[1]) { S.cursor = span[1]; setPlaying(false); }
+  recomputeActive(); drawTimeline();
+}
+function setPlaying(on) {
+  S.playing = on; lastFrame = 0;
+  $("tl-play").innerHTML = on ? "❚❚ Pause" : "▶ Replay";
+  $("tl-play").classList.toggle("on", on);
+  if (on) {
+    const range = timelineRange(); if (!range) { S.playing = false; return; }
+    const span = S.win || range;
+    if (S.cursor == null || S.cursor >= span[1]) S.cursor = span[0];
+  }
+  invalidate();
+}
+function stepEvent(dir) {
+  const evs = DATA.events.filter(e => inWindow(e.ts));
+  if (!evs.length) return;
+  let i = S.selEvent ? evs.indexOf(S.selEvent) : (dir > 0 ? -1 : evs.length);
+  i = clamp(i + dir, 0, evs.length - 1);
+  focusEvent(evs[i]);
+}
+
+/* ---- legend & HUD ---------------------------------------------------- */
+function renderLegend() {
+  const box = $("legend"); box.innerHTML = "";
+  const titles = { zone: "Colour: network zone", state: "Colour: compromise state",
+                   crit: "Colour: asset criticality", risk: "Colour: highest CVSS" };
+  const head = el("button");
+  head.style.cssText = "display:flex;align-items:center;gap:10px;width:100%;background:none;" +
+    "border:0;padding:0;text-align:left;color:inherit";
+  head.title = "Collapse / expand the legend";
+  const h3 = el("h3", null, titles[S.colorBy]); h3.style.margin = "0";
+  head.appendChild(h3);
+  const tgl = el("span", null, S.legendOpen ? "\u2013" : "+");
+  tgl.style.cssText = "margin-left:auto;color:var(--muted);font-size:12px";
+  head.appendChild(tgl);
+  head.onclick = () => { S.legendOpen = !S.legendOpen; renderLegend(); S.needsFit = true; invalidate(); };
+  box.appendChild(head);
+  if (!S.legendOpen) return;
+  box.appendChild(el("div")).style.height = "7px";
+  const item = (color, label, glyph, round) => {
+    const d = el("div", "li");
+    if (glyph) { const g = el("span", null, glyph); g.style.cssText = "color:" + color + ";width:10px"; d.appendChild(g); }
+    else { const sw = el("span", "sw" + (round ? " round" : "")); sw.style.background = color; d.appendChild(sw); }
+    d.appendChild(el("span", null, label));
+    return d;
+  };
+  if (S.colorBy === "zone") {
+    DATA.zones.slice(0, 8).forEach(z => box.appendChild(item(z.slot < 0 ? PAL.other : PAL.series[z.slot], z.label)));
+    if (DATA.zones.length > 8) box.appendChild(item(PAL.other, "Other zones (" + (DATA.zones.length - 8) + ")"));
+  } else if (S.colorBy === "state") {
+    DATA.vocab.stateOrder.forEach(k => box.appendChild(item(PAL.status[k],
+      DATA.vocab.stateLabels[k], STATE_GLYPH[k] || "○")));
+  } else if (S.colorBy === "crit") {
+    [4, 3, 2, 1].forEach(l => box.appendChild(item(PAL.seq[l - 1], DATA.vocab.critLabels[String(l)], null, true)));
+  } else {
+    [["9.0+", 3], ["7.0–8.9", 2], ["4.0–6.9", 1], ["0.1–3.9", 0]]
+      .forEach(([lab, i]) => box.appendChild(item(PAL.seq[i], "CVSS " + lab, null, true)));
+    box.appendChild(item(PAL.muted, "No findings", null, true));
+  }
+  const g2 = el("div", "grp");
+  g2.appendChild(el("h3", null, "Ring: compromise state"));
+  ["critical", "serious", "warning"].forEach(k => {
+    const d = el("div", "li");
+    const sw = el("span", "sw round");
+    sw.style.cssText = "background:transparent;border:2px solid " + PAL.status[k] + ";width:11px;height:11px";
+    d.appendChild(sw);
+    d.appendChild(el("span", null, (STATE_GLYPH[k] || "") + " " + DATA.vocab.stateLabels[k]));
+    g2.appendChild(d);
+  });
+  box.appendChild(g2);
+  const g3 = el("div", "grp");
+  g3.appendChild(el("h3", null, "Size: asset criticality"));
+  const sizes = el("div", "sizes");
+  [1, 2, 3, 4].forEach(l => {
+    const i = el("i"); const d = 6 + (l - 1) * 3;
+    i.style.cssText = "width:" + d + "px;height:" + d + "px";
+    sizes.appendChild(i);
+  });
+  const cap = el("span"); cap.style.cssText = "font-size:10px;color:var(--muted);margin-left:4px";
+  cap.textContent = "low → critical";
+  sizes.appendChild(cap);
+  g3.appendChild(sizes);
+  box.appendChild(g3);
+  const p = selectedPath();
+  if (p) {
+    const g4 = el("div", "grp");
+    g4.appendChild(el("h3", null, "Traced attack path"));
+    g4.appendChild(item(pathColor(p), p.name));
+    const note = el("div", "li"); note.style.color = "var(--muted)";
+    note.innerHTML = "dashed hop = no direct link in the topology";
+    g4.appendChild(note);
+    box.appendChild(g4);
+  }
+}
+
+function renderHud() {
+  const hud = $("hud"); hud.innerHTML = "";
+  const pill = (label, onClear) => {
+    const p = el("span", "pill", label);
+    if (onClear) { const b = el("button", null, "✕"); b.title = "Clear"; b.onclick = onClear; p.appendChild(b); }
+    hud.appendChild(p); return p;
+  };
+  if (S.win) pill("Window " + fmtTime(S.win[0]) + " – " + fmtTime(S.win[1]) + " · " +
+      windowEvents().length + " events",
+      () => { S.win = null; S.cursor = null; recomputeActive(); drawTimeline(); invalidate(); });
+  if (S.cursor != null && !S.playing) pill("Replay at " + fmtTime(S.cursor),
+      () => { S.cursor = null; recomputeActive(); drawTimeline(); invalidate(); });
+  const p = selectedPath();
+  if (p) pill("Path: " + p.name, () => selectPath(p.id));
+  if (S.query) pill('Search "' + S.query + '" · ' + S.matches.size + " match(es)",
+      () => { S.query = ""; $("q").value = ""; computeMatches(); updateSearchCount(); invalidate(); renderHud(); });
+  const hidden = NODES.filter(n => !nodePasses(n)).length;
+  if (hidden) pill(hidden + " asset(s) filtered out", () => {
+    S.zonesOff.clear(); S.statesOff.clear(); S.critsOff.clear();
+    S.onlyPaths = S.onlyCve = S.onlyKev = S.onlyWindow = false;
+    ["f-paths", "f-cve", "f-kev", "f-window"].forEach(id => { $(id).checked = false; });
+    renderChips(); invalidate(); renderHud();
+  });
+  if (DATA.paths.length > 1) {
+    const t = el("span", "pill");
+    const cb = el("input"); cb.type = "checkbox"; cb.checked = !!S.showAllPaths;
+    cb.style.cssText = "margin:0;accent-color:var(--s1)";
+    cb.onchange = () => { S.showAllPaths = cb.checked; invalidate(); };
+    t.appendChild(cb); t.appendChild(el("span", null, "show all paths"));
+    hud.appendChild(t);
+  }
+}
+function updateSearchCount() {
+  $("q-count").textContent = S.query ? S.matches.size + "/" + NODES.length : "";
+}
+
+/* ====================================================================== *
+ * Table view (the WCAG-clean twin of every visual encoding)
+ * ====================================================================== */
+
+const SHEETS = {
+  assets: {
+    label: "Assets",
+    cols: [
+      { k: "label", h: "Host" }, { k: "zone", h: "Zone" }, { k: "ip", h: "Address" },
+      { k: "kind", h: "Type" }, { k: "os", h: "Platform" },
+      { k: "state", h: "State", fmt: n => (STATE_GLYPH[n.state] || "○") + " " + DATA.vocab.stateLabels[n.state] },
+      { k: "crit", h: "Value", num: true, fmt: n => DATA.vocab.critLabels[String(n.crit)] },
+      { k: "cveCount", h: "Findings", num: true, get: n => n.cves.length },
+      { k: "maxCvss", h: "Max CVSS", num: true, fmt: n => n.maxCvss ? n.maxCvss.toFixed(1) : "" },
+      { k: "degree", h: "Links", num: true },
+      { k: "choke", h: "Choke %", num: true, fmt: n => n.choke ? (n.choke * 100).toFixed(1) : "" },
+      { k: "pathCount", h: "Paths", num: true, get: n => n.paths.length },
+      { k: "eventCount", h: "Events", num: true },
+    ],
+    rows: () => NODES.filter(nodePasses),
+    click: n => { selectNode(n); closeSheet(); fitView([n].concat((ADJ.get(n.id) || []).map(a => a.node))); },
+  },
+  links: {
+    label: "Links",
+    cols: [
+      { k: "s", h: "Source", get: l => l.a.label }, { k: "t", h: "Target", get: l => l.b.label },
+      { k: "kind", h: "Kind" }, { k: "protocol", h: "Protocol" },
+      { k: "port", h: "Port", num: true }, { k: "bandwidth", h: "Bandwidth" },
+      { k: "notes", h: "Notes" },
+    ],
+    rows: () => LINKS.filter(l => nodePasses(l.a) && nodePasses(l.b)),
+    click: l => { S.selLink = l; S.selNode = null; renderInspector(); closeSheet(); },
+  },
+  paths: {
+    label: "Attack paths",
+    cols: [
+      { k: "name", h: "Path" },
+      { k: "severity", h: "Severity", fmt: p => SEV_GLYPH[p.severity] + " " + DATA.vocab.severityLabels[p.severity] },
+      { k: "hops", h: "Hops", num: true, get: p => p.steps.length },
+      { k: "actor", h: "Actor" }, { k: "objective", h: "Objective" },
+      { k: "status", h: "Status" },
+      { k: "start", h: "First step", fmt: p => p.start ? fmtTime(p.start, true) : "" },
+      { k: "end", h: "Last step", fmt: p => p.end ? fmtTime(p.end, true) : "" },
+    ],
+    rows: () => DATA.paths,
+    click: p => { selectPath(p.id); closeSheet(); },
+  },
+  events: {
+    label: "Timeline",
+    cols: [
+      { k: "ts", h: "Time", num: true, fmt: e => fmtTime(e.ts, true) },
+      { k: "severity", h: "Severity", fmt: e => SEV_GLYPH[e.severity] + " " + DATA.vocab.severityLabels[e.severity] },
+      { k: "phase", h: "Phase" }, { k: "title", h: "Event" },
+      { k: "nodes", h: "Assets", get: e => e.nodes.map(id => (BYID.get(id) || {}).label || id).join(", ") },
+      { k: "technique", h: "Technique" }, { k: "source", h: "Source" },
+      { k: "path", h: "Path", get: e => (DATA.paths.find(p => p.id === e.path) || {}).name || "" },
+      { k: "detail", h: "Detail" },
+    ],
+    rows: () => DATA.events.filter(e => inWindow(e.ts)),
+    click: e => { focusEvent(e); closeSheet(); },
+  },
+};
+
+const cellValue = (col, row) => col.get ? col.get(row) : row[col.k];
+const cellText = (col, row) => col.fmt ? col.fmt(row) : (cellValue(col, row) == null ? "" : String(cellValue(col, row)));
+
+function renderSheet() {
+  const tabs = $("sheet-tabs"); tabs.innerHTML = "";
+  Object.keys(SHEETS).forEach(key => {
+    const b = el("button", "tab" + (key === S.sheetTab ? " on" : ""),
+      SHEETS[key].label + " (" + SHEETS[key].rows().length + ")");
+    b.onclick = () => { S.sheetTab = key; renderSheet(); };
+    tabs.appendChild(b);
+  });
+  const spec = SHEETS[S.sheetTab];
+  let rows = spec.rows().slice();
+  const sort = S.sheetSort[S.sheetTab];
+  if (sort) {
+    const col = spec.cols.find(c => c.k === sort.k);
+    if (col) rows.sort((a, b) => {
+      const va = cellValue(col, a), vb = cellValue(col, b);
+      const na = typeof va === "number", nb = typeof vb === "number";
+      let r = (na && nb) ? va - vb : String(va == null ? "" : va).localeCompare(String(vb == null ? "" : vb));
+      return sort.dir < 0 ? -r : r;
+    });
+  }
+  const body = $("sheet-body"); body.innerHTML = "";
+  const t = el("table", "tbl");
+  const hr = el("tr");
+  spec.cols.forEach(c => {
+    const th = el("th", c.num ? "num" : null,
+      c.h + (sort && sort.k === c.k ? (sort.dir < 0 ? " ▼" : " ▲") : ""));
+    th.onclick = () => {
+      const cur = S.sheetSort[S.sheetTab];
+      S.sheetSort[S.sheetTab] = { k: c.k, dir: cur && cur.k === c.k ? -cur.dir : 1 };
+      renderSheet();
+    };
+    hr.appendChild(th);
+  });
+  t.appendChild(el("thead")).appendChild(hr);
+  const tb = el("tbody");
+  rows.forEach(row => {
+    const tr = el("tr");
+    spec.cols.forEach(c => tr.appendChild(el("td", c.num ? "num" : null, cellText(c, row))));
+    tr.style.cursor = "pointer";
+    tr.onclick = () => spec.click(row);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  body.appendChild(t);
+  if (!rows.length) body.appendChild(el("div", null, "Nothing matches the current filters."))
+    .style.cssText = "padding:22px 0;color:var(--muted)";
+}
+function openSheet() { S.sheetOpen = true; $("sheet").classList.add("open"); renderSheet(); }
+function closeSheet() { S.sheetOpen = false; $("sheet").classList.remove("open"); }
+function downloadCsv() {
+  const spec = SHEETS[S.sheetTab];
+  const q = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const lines = [spec.cols.map(c => q(c.h)).join(",")];
+  spec.rows().forEach(row => lines.push(spec.cols.map(c => q(cellText(c, row))).join(",")));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "netmap-" + S.sheetTab + ".csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ====================================================================== *
+ * Toasts
+ * ====================================================================== */
+
+function toast(msg, kind) {
+  const t = el("div", "toast" + (kind ? " " + kind : ""), msg);
+  $("toasts").appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .3s";
+    setTimeout(() => t.remove(), 320); }, kind === "err" ? 8000 : 3400);
+}
+/* ====================================================================== *
+ * Wiring
+ * ====================================================================== */
+
+function renderAll() {
+  renderTiles(); renderChips(); renderPaths(); renderLegend();
+  renderInspector(); drawTimeline(); renderHud(); updateSearchCount();
+  $("graph-empty").style.display = NODES.length ? "none" : "grid";
+  if (!NODES.length) $("graph-empty").textContent =
+    "This topology has no nodes. Check the input file.";
+  invalidate();
+}
+
+function setTheme(theme) {
+  S.theme = theme;
+  document.documentElement.setAttribute("data-theme", theme);
+  refreshPalette();
+  $("tl-legend").dataset.done = "";
+  renderAll();
+}
+
+function wire() {
+  $("q").addEventListener("input", (e) => {
+    S.query = e.target.value; computeMatches(); updateSearchCount(); renderHud(); invalidate();
+  });
+  $("q").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const hits = NODES.filter(n => S.matches.has(n.id));
+      if (hits.length) { selectNode(hits[0]); fitView(hits); }
+    }
+  });
+  $("layout").addEventListener("change", (e) => {
+    S.layout = e.target.value;
+    NODES.forEach(n => { n.placed = false; n.pinned = false; });
+    seedPositions(); renderLegend(); invalidate();
+  });
+  $("colorby").addEventListener("change", (e) => {
+    S.colorBy = e.target.value; renderLegend(); renderChips(); invalidate();
+  });
+  $("btn-table").onclick = () => S.sheetOpen ? closeSheet() : openSheet();
+  $("sheet-close").onclick = closeSheet;
+  $("sheet-csv").onclick = downloadCsv;
+  $("sheet").addEventListener("pointerdown", (e) => { if (e.target === $("sheet")) closeSheet(); });
+  $("btn-theme").onclick = () => setTheme(S.theme === "dark" ? "light" : "dark");
+  $("btn-help").onclick = () => { clearSelection(); toast("Shortcuts are listed in the right-hand panel."); };
+  $("z-in").onclick = () => zoomAt(cv.clientWidth / 2, cv.clientHeight / 2, 1.3);
+  $("z-out").onclick = () => zoomAt(cv.clientWidth / 2, cv.clientHeight / 2, 1 / 1.3);
+  $("z-fit").onclick = () => { fitView(); invalidate(); };
+
+  const bind = (id, key) => $(id).addEventListener("change", (e) => {
+    S[key] = e.target.checked;
+    recomputeActive(); recomputeEmphasis(); renderHud(); invalidate();
+  });
+  bind("f-paths", "onlyPaths"); bind("f-cve", "onlyCve"); bind("f-kev", "onlyKev");
+  bind("f-window", "onlyWindow"); bind("f-hide", "hideFiltered");
+  bind("f-labels", "showLabels"); bind("f-edgelabels", "showEdgeLabels");
+
+  document.querySelectorAll("[data-all]").forEach(b => b.onclick = () => {
+    S.zonesOff.clear(); renderChips(); renderHud(); invalidate();
+  });
+  document.querySelectorAll("[data-none]").forEach(b => b.onclick = () => {
+    DATA.zones.forEach(z => S.zonesOff.add(z.id)); renderChips(); renderHud(); invalidate();
+  });
+
+  $("tl-play").onclick = () => setPlaying(!S.playing);
+  $("tl-prev").onclick = () => stepEvent(-1);
+  $("tl-next").onclick = () => stepEvent(1);
+  $("tl-speed").onchange = (e) => { S.speed = +e.target.value; };
+  $("tl-toggle").onclick = () => {
+    const w = $("timewrap"); w.classList.toggle("collapsed");
+    $("tl-toggle").innerHTML = w.classList.contains("collapsed") ? "▴" : "▾";
+    setTimeout(() => { resize(); invalidate(); }, 30);
+  };
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "select" || tag === "textarea") {
+      if (e.key === "Escape") e.target.blur();
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch (e.key) {
+      case "/": e.preventDefault(); $("q").focus(); break;
+      case "f": case "F": fitView(); invalidate(); break;
+      case "l": case "L": {
+        const opts = ["zones", "force", "radial"];
+        const next = opts[(opts.indexOf(S.layout) + 1) % opts.length];
+        $("layout").value = next; $("layout").dispatchEvent(new Event("change"));
+        toast("Layout: " + next); break;
+      }
+      case "t": case "T": S.sheetOpen ? closeSheet() : openSheet(); break;
+      case "d": case "D": setTheme(S.theme === "dark" ? "light" : "dark"); break;
+      case " ": e.preventDefault(); setPlaying(!S.playing); break;
+      case "ArrowRight": e.preventDefault(); S.selPath ? setHop(S.hop + 1) : stepEvent(1);
+        renderPaths(); break;
+      case "ArrowLeft": e.preventDefault(); S.selPath ? setHop(S.hop - 1) : stepEvent(-1);
+        renderPaths(); break;
+      case "Escape":
+        if (S.sheetOpen) closeSheet();
+        else if (S.selNode || S.selLink) clearSelection();
+        else if (S.selPath) selectPath(S.selPath);
+        else if (S.win || S.cursor != null) { S.win = null; S.cursor = null;
+          recomputeActive(); drawTimeline(); invalidate(); }
+        break;
+      case "?": clearSelection(); break;
+      default: break;
+    }
+  });
+
+  const ro = new ResizeObserver(() => { resize(); drawTimeline(); invalidate(); });
+  ro.observe($("main")); ro.observe($("tl-body"));
+  window.addEventListener("resize", () => { resize(); drawTimeline(); invalidate(); });
+}
+
+function boot() {
+  refreshPalette();
+  document.title = DATA.title + " · netmap";
+  $("doc-title").textContent = DATA.title;
+  $("doc-sub").textContent = DATA.stats.nodes + " assets · " + DATA.stats.paths + " paths · " +
+    DATA.stats.events + " events";
+  prepare(null);
+  seedPositions();
+  resize();
+  wire();
+  computeMatches(); recomputeActive(); recomputeEmphasis();
+  renderAll();
+  // settle the layout before the first fit so the view is not off-centre
+  for (let i = 0; i < 220; i++) simulate();
+  fitView();
+  S.needsFit = true;
+  requestAnimationFrame(loop);
+  if (DATA.warnings && DATA.warnings.length)
+    toast(DATA.warnings.length + " input note(s) — see the Posture panel", "warn");
+}
+boot();
+</script>
+</body>
+</html>
